@@ -178,4 +178,3 @@ print_info "Yeni makinede ilk kez çalıştırırken model sağlayıcılarına g
 print_info "  omp login"
 print_info "Veya ortam değişkenlerinizi (.bashrc / .zshrc / env) ayarlayın."
 echo ""
-EOF
