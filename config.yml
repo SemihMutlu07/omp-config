@@ -1,0 +1,91 @@
+symbolPreset: unicode
+composer:
+  shape: band
+theme:
+  dark: titanium
+  light: light
+setupVersion: 2
+modelRoles:
+  smol: google-antigravity/gemini-3.8-flash
+  slow: openai-codex/gpt-6-astra
+  plan: cursor/claude-sonnet-5-5
+  vision: openai-codex/gpt-6-astra
+  default: google-antigravity/gemini-3.8-flash:medium
+task:
+  agentModelOverrides:
+    reviewer: cursor/grok-4.7:xhigh
+    task: deepseek/deepseek-flash:high
+    scout: "@smol:high"
+    sonic: "@smol:high"
+dev:
+  autoqaConsent: granted
+startup:
+  quiet: false
+  checkUpdate: false
+  showSplash: false
+defaultThinkingLevel: high
+enabledModels:
+  - cursor/grok-4.7
+  - cursor/grok-4.7-fast
+  - cursor/default
+  - cursor/claude-opus-5-5
+  - cursor/claude-sonnet-5-5
+  - google-antigravity/gemini-3.8-flash
+  - google-antigravity/claude-sonnet-4-6
+  - google-antigravity/claude-opus-4-6
+  - openai-codex/gpt-6-astra
+  - openai-codex/gpt-6-luna
+  - openai-codex/gpt-6.1-sol
+  - deepseek/deepseek-flash
+  - deepseek/deepseek-v4-flash
+  - deepseek/deepseek-v4-pro
+retry:
+  usageAwareFallback: true
+  fallbackChains:
+    cursor/grok-4.7-fast:
+      - cursor/grok-4.7
+      - google-antigravity/claude-sonnet-4-6
+      - google-antigravity/gemini-3.8-flash
+    cursor/grok-4.7:
+      - cursor/grok-4.7-fast
+      - google-antigravity/claude-sonnet-4-6
+      - google-antigravity/gemini-3.8-flash
+    cursor/claude-opus-5-5:
+      - cursor/claude-sonnet-5-5
+      - google-antigravity/claude-sonnet-4-6
+      - cursor/default
+    cursor/claude-sonnet-5-5:
+      - google-antigravity/claude-sonnet-4-6
+      - cursor/default
+      - google-antigravity/gemini-3.8-flash
+    google-antigravity/gemini-3.8-flash:
+      - google-antigravity/claude-sonnet-4-6
+      - cursor/default
+    google-antigravity/claude-sonnet-4-6:
+      - google-antigravity/gemini-3.8-flash
+      - cursor/default
+    google-antigravity/claude-opus-4-6:
+      - google-antigravity/claude-sonnet-4-6
+      - google-antigravity/gemini-3.8-flash
+      - cursor/default
+    openai-codex/gpt-6-astra:
+      - cursor/claude-sonnet-5-5
+      - google-antigravity/gemini-3.8-flash
+    openai-codex/gpt-6-luna:
+      - cursor/claude-sonnet-5-5
+      - google-antigravity/gemini-3.8-flash
+    openai-codex/gpt-6.1-sol:
+      - cursor/claude-sonnet-5-5
+      - google-antigravity/gemini-3.8-flash
+skills:
+  customDirectories:
+    - ~/.pi/agent/skills
+extensions:
+  - ~/.omp/agent/extensions/deepseek-offpeak.ts
+memory:
+  backend: local
+memories:
+  maxRolloutsPerStartup: 8
+browser:
+  headless: true
+hideThinkingBlock: true

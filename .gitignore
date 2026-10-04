@@ -1,0 +1,39 @@
+# Secrets & Auth (Strictly excluded)
+*auth*.json
+*.token
+*.env
+*.env.*
+*secret*
+*credential*
+
+# SQLite Databases & WAL (Strictly prohibited across machines)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+autoqa.db*
+
+# OMP Runtime & Cache Directories
+sessions/
+terminal-sessions/
+memories/
+logs/
+cache/
+blobs/
+predict/
+run/
+install-id
+last-changelog-version
+
+# Dependencies & Build artifacts
+node_modules/
+dist/
+*.pyc
+__pycache__/
+
+# OS & Editor artifacts
+.DS_Store
+*.swp
+*.bak*
+*~
