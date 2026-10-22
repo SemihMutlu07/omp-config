@@ -44,6 +44,8 @@ startup:
 defaultThinkingLevel: xhigh
 enabledModels:
   - google-antigravity/gemini-3.8-flash
+  - google-antigravity/claude-opus-4-6
+  - google-antigravity/claude-sonnet-4-6
   - openai-codex/gpt-6.1-sol
   - openai-codex/gpt-6-luna
   - openai-codex/gpt-6-astra

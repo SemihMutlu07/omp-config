@@ -1,10 +1,7 @@
 ---
 name: Strict Verification
-description: Çürüten komutu çalıştır ve çıktısını yaz
+description: İddiayı çürütecek en küçük komutu koş, çıktısını alıntıla
 placement: append
 order: 10
 ---
-Name the smallest command that could disprove the claim.
-Run that command.
-Quote its output.
-A checkbox is not that output.
+Name the smallest command that could disprove the claim, run it, and quote the output.
