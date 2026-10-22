@@ -3,9 +3,11 @@
 # leave one in a working directory: a stray /tmp/WATCHDOG.yml once forced
 # astra:high on every session started from /tmp.
 #
-# Cost rule: advisor prefers Codex GPT while its window has room, then Grok,
-# then Gemini (see retry.fallbackChains.advisor); it reviews once per completed
-# agent response (agent-end), not on every turn.
+# The advisor's model lives in exactly one place: modelRoles.advisor in
+# config.yml (currently openai-codex/gpt-6.1-sol:medium). Do not set `model:`
+# on a roster entry here — it silently overrides that role. Fallbacks come from
+# retry.fallbackChains.advisor. Reviews run once per completed agent response
+# (agent-end), not on every turn.
 
 instructions: |
   Call the advise tool only when you have a material finding. An empty final
@@ -17,8 +19,8 @@ instructions: |
 
 advisors:
   - name: default
-    model: openai-codex/gpt-6.1-sol:high
     reviewMode: agent-end
+    reviewInterval: 3
     instructions: |
       You are the vision and planning reviewer.
       Check the turn against the task card: outcome, scope fence, acceptance

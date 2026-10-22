@@ -15,7 +15,7 @@ modelRoles:
   vision: google-antigravity/gemini-3.8-flash:medium
   plan: openai-codex/gpt-6.1-sol:xhigh
   slow: openai-codex/gpt-6.1-sol:xhigh
-  advisor: openai-codex/gpt-6.1-sol:high
+  advisor: openai-codex/gpt-6.1-sol:medium
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
   default: deepseek/deepseek-flash
@@ -25,12 +25,12 @@ cycleOrder:
   - slow
 task:
   agentModelOverrides:
-    scout: "@smol"
-    sonic: "@smol"
-    task: "@task:high"
-    reviewer: "@slow:xhigh"
-    security-reviewer: "@slow:xhigh"
-  maxConcurrency: 1
+    scout: deepseek/deepseek-flash
+    sonic: deepseek/deepseek-v4-flash
+    task: "@task"
+    reviewer: "@slow"
+    security-reviewer: "@slow"
+  maxConcurrency: 6
   maxRecursionDepth: 1
   softRequestBudget: 25
   enableEffort: false
@@ -44,8 +44,6 @@ startup:
 defaultThinkingLevel: xhigh
 enabledModels:
   - google-antigravity/gemini-3.8-flash
-  - google-antigravity/claude-opus-4-6
-  - google-antigravity/claude-sonnet-4-6
   - openai-codex/gpt-6.1-sol
   - openai-codex/gpt-6-luna
   - openai-codex/gpt-6-astra
@@ -64,43 +62,35 @@ retry:
   modelFallback: true
   maxRetries: 2
   fallbackOn: usage-limit
+  # One ladder, one rule. Primary is the role's own model; the only fallback
+  # rung is DeepSeek (no quota, paid per token). Gemini's weekly window is
+  # nearly spent, so it is a primary for cheap utility roles only and never a
+  # fallback. Image generation has no substitute, so it gets an empty chain.
+  # Claude models are not used: they came through the Gemini subscription.
   fallbackChains:
     plan:
-      - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:xhigh
+      - deepseek/deepseek-v4-pro
     slow:
-      - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:high
+      - deepseek/deepseek-v4-pro
     advisor:
-      - xai-oauth/grok-4.7
-      - google-antigravity/gemini-3.8-flash
+      - deepseek/deepseek-v4-pro
     task:
-      - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:high
+      - deepseek/deepseek-v4-pro
     judge:
-      - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:medium
+      - deepseek/deepseek-v4-pro
     default:
-      - google-antigravity/gemini-3.8-flash
       - openai-codex/gpt-6.1-sol:medium
     smol:
-      - xai-oauth/grok-4.7:medium
+      - deepseek/deepseek-flash
     tiny:
-      - xai-oauth/grok-4.7:medium
+      - deepseek/deepseek-flash
     memory:
-      - xai-oauth/grok-4.7:medium
+      - deepseek/deepseek-flash
     commit:
-      - xai-oauth/grok-4.7:medium
+      - deepseek/deepseek-flash
     vision:
-      - xai-oauth/grok-4.7:medium
-    image:
-      - xai-oauth/grok-imagine-image
-    openai-codex/gpt-6.1-sol:
-      - xai-oauth/grok-4.7
-      - google-antigravity/gemini-3.8-flash
-    openai-codex/gpt-6-astra:
-      - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:high
+      - deepseek/deepseek-v4-flash-vision-exp
+    image: []
 skills:
   customDirectories:
     - ~/.omp/agent/skills
@@ -133,3 +123,4 @@ providers:
   cacheWarming: "off"
 advisor:
   enabled: true
+  continueSeverity: blocker

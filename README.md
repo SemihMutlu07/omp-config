@@ -97,7 +97,7 @@ Yeni cihazda model sağlayıcılarını bağlayın:
 ```bash
 omp login
 ```
-* **Google Antigravity:** Gemini 3.8 Flash, Claude Sonnet 4.6
+* **Google Antigravity:** Gemini 3.8 Flash
 * **OpenAI Codex:** GPT-6 Astra, GPT-6 Luna, GPT-6.1 Sol
 * **xAI SuperGrok:** Grok 4.7 through `xai-oauth`.
 
@@ -116,18 +116,18 @@ OMP is the primary coding harness.
 | Planning and difficult one-shots | `plan`, `slow` | Sol 6.1 xhigh |
 | Correctness and security review | `reviewer`, `security-reviewer` → `@slow` | Sol 6.1 xhigh |
 | Image analysis and image role | `vision`, `image` | Gemini 3.8 Flash medium / low |
-| Optional passive review | `advisor` | Sol 6.1 xhigh |
+| Passive review, enabled | `advisor` | Sol 6.1 medium |
 
 Use OMP plan mode for read-only planning; a model role does not restrict tools.
 
 Delegation permits one concurrent child and one nesting level.
 Each child receives a soft budget of 25 requests, not a token or subscription limit.
-The enabled model list contains Gemini 3.8 Flash, GPT-6.1 Sol, GPT-6 Luna, and Grok 4.7.
-DeepSeek, GLM 5.3 Flash, and the `opencode-free` provider are removed.
+The enabled model list contains Gemini 3.8 Flash, GPT-6.1 Sol, GPT-6 Luna, GPT-6 Astra, Grok 4.7 (`:high`, `:xhigh`), and the `deepseek/*` wildcard. Claude models are not enabled: they were only reachable through the Gemini subscription.
+GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is enabled again, but only as a paid, quota-free fallback rung.
 Do not restore `extensions/opencode-free.ts` or add those model ids back to `enabledModels`.
 OMP does not load OpenCode project or user commands.
-Model switching on request failure remains enabled, but no fallback chain is configured.
-Idle recaps, cache warming, and the advisor remain disabled.
+Model switching on request failure is enabled (`retry.modelFallback: true`, `usageAwareFallback: true`, `maxRetries: 2`, trigger `usage-limit`). Each chain in `retry.fallbackChains` holds only the DeepSeek rung: `deepseek-v4-pro` for `plan`/`slow`/`advisor`/`task`/`judge`, `deepseek-flash` for `smol`/`tiny`/`memory`/`commit`. `default` falls to Sol medium; `vision` falls to `deepseek-v4-flash-vision-exp`; `image` has an empty chain because no substitute is configured.
+Idle recaps and cache warming remain disabled. The advisor is enabled with `continueSeverity: blocker`.
 API errors permit two retries.
 
 A live CLI smoke returned `GEMINI_ROLE_OK` from `@smol` and `LUNA_ROLE_OK` from `@task`.
