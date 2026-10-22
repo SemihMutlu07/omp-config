@@ -1,14 +1,6 @@
 ---
 name: ste100
-description: |
-  Write or rewrite text in ASD-STE100 Simplified Technical English — a controlled
-  language with hard, countable limits. Use when the user asks for "yazım
-  basitliği", "sadeleştir", "basit yaz", "sade yaz", "anlaşılır yaz", "ASD-STE100",
-  "Simplified Technical English", "controlled language", or "80% STE", and by
-  default for procedures, API docs, error messages, commit bodies, runbooks, and
-  any text a reader cannot ask a follow-up question about. Not for zero-knowledge
-  explanation with pictures (that is rung 3 in `clarity`) and not for de-AI-ing finished prose
-  (that is humanizer).
+description: Use this for every agent reply, not pictures or finished prose.
 ---
 
 # STE100 — controlled language, countable limits
@@ -20,13 +12,15 @@ Y?", so the text must not be able to mean two things.
 This skill applies the same constraint to your output. The point is not short text. The
 point is text with exactly one reading.
 
-## Two modes
+## Default
 
-- **soft (default, "80% STE")** — the countable limits, active voice, one term per concept.
-  Use for chat answers, explanations, PR and commit bodies, review findings, summaries.
-- **full** — soft plus the approved-word discipline, safety-instruction format, and vertical
-  lists for sequences and conditions. Use for procedures, runbooks, published docs, safety
-  text, and anything another agent parses as instructions.
+Every reply uses the countable limits below. This is the default. Do not use the old 80% soft mode.
+
+Reply in English. Use another language only when the user asks for it in the current message.
+
+Give only the answer. Add detail, options, or history only when the user asks for them.
+
+The approved-word list applies to English procedures, runbooks, and published docs.
 
 State the mode only if the user asks which one you used.
 
@@ -64,10 +58,10 @@ keeps it.
 
 ## Turkish
 
+Use this section only when the user asks for Turkish in the current message.
 The approved-word dictionary is English-only and does not transfer. Keep the structural
-rules. The word count is a proxy: in Turkish, split any sentence that carries more than one
-finite verb, and do not stack nested `-dik/-ecek` clauses. Prefer the plain verb over the
-`-me/-ma` noun form ("paneli tak", not "panelin takılması").
+rules. In Turkish, split any sentence that carries more than one finite verb, and do not
+stack nested `-dik/-ecek` clauses. Prefer the plain verb over the `-me/-ma` noun form.
 
 ## Self-check before you send
 

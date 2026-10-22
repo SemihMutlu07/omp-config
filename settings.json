@@ -1,17 +1,1 @@
-{
-  "observational-memory": {
-    "models": {
-      "observer": {
-        "provider": "google-antigravity",
-        "id": "gemini-3.8-flash",
-        "thinking": "low"
-      },
-      "consolidator": {
-        "provider": "google-antigravity",
-        "id": "claude-sonnet-4-6",
-        "thinking": "medium"
-      }
-    },
-    "enabled": true
-  }
-}
+{}

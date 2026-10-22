@@ -1,48 +1,46 @@
-# Prompt Snippets
+# Prompt Cockpit
 
-Mix-and-match single-purpose prompt rules that are prepended or appended to
-your message when you send it. Unlike skills, each snippet is a tiny,
-standalone instruction — toggle exactly the ones you want per message.
+Unified control center for OMP execution modes (Loops), Magic Keywords, and prompt modifiers (Prepend & Append).
 
 ## Usage
 
-- Press **alt+s** or run **/snippets** to open the toggle menu.
-  - `up`/`down` to navigate, `space` to toggle, `enter` to apply, `esc` to cancel.
-  - `tab` previews the highlighted snippet (name, placement, order, filename,
-    and full body; `up`/`down` scroll long bodies). `tab` or `esc` returns to
-    the list with your cursor position preserved.
-  - The menu is framed with top/bottom border lines and scrolls when the list
-    exceeds the viewport (max height adapts to your terminal), with
-    `↑ n more` / `↓ n more` indicators when clipped.
-- Active snippets show up as a widget above the editor:
-  - `↑ prepend: ...` (accent color) — inserted before your message
-  - `↓ append: ...` (warning color) — inserted after your message
-- When you send a message, active snippet bodies are merged into the message
-  text: prepend group (sorted by `order`) → your text → append group (sorted
-  by `order`), separated by blank lines.
-- Toggles reset to **all off** after each send and at session start.
+- Press **alt+s** or run **/snippets** (or **/cockpit**) to open the cockpit menu.
+  - `↑`/`↓` or `1`-`4` navigate across sections (1: Keywords, 2: Loops, 3: Prepend, 4: Append).
+  - `Space` toggles items (Execution Modes are mutually exclusive).
+  - `c` clears all active selections immediately.
+  - `Tab` previews item details, command syntax, or snippet markdown.
+  - `Enter` applies the selection.
+  - `Esc` cancels.
 
-## Snippet files
+## Cockpit Sections
 
-Snippets live in `snippets/` next to `index.ts` — one markdown file each,
-with frontmatter:
+### 1. ⚡ Magic Keywords (OMP Yerleşik)
+- **orchestrate**: Decomposes, dispatches to parallel subagents, and verifies.
+- **workflowz**: Deterministic multi-subagent workflow (`workpool`, specialist roles).
+- **ultrathink**: Maximum reasoning effort / thinking budget.
+- **jevify**: Bulk classification via eval kernel's `judge_batch()`.
 
-```markdown
----
-name: Concise
-description: Keep answers short and to the point
-placement: prepend
-order: 10
----
-Keep your response concise. Skip preamble and unnecessary explanation.
-```
+### 2. 🎯 Execution Modes (Döngü Kontrolü)
+- **Loop (Test --until)**: Automatically re-submits the prompt after each turn until a test command exits with code 0 (`/loop --until 'npm test'`).
+- **Loop (3x count)**: Automatically repeats prompt for 3 iterations (`/loop 3`).
 
-| Field | Required | Notes |
-|---|---|---|
-| `name` | no | Display name; defaults to the filename without `.md` |
-| `description` | no | Shown next to the name in the toggle menu |
-| `placement` | no | `prepend` or `append` (default: `append`) |
-| `order` | no | Number; sorts snippets within their group, in the menu and in the applied text (default: `9999`, ties broken by name) |
+### 3. ↑ Prepend Modifiers
+- **Resume & Orient**: Read Kasa. Return result, open task, and next action, each with a path.
+- **Better**: Focus on professional depth, raw inputs, tools, and verification.
 
-Files are re-scanned every time the menu opens and every time a message is
-sent, so edits take effect immediately — no `/reload` needed.
+### 4. ↓ Append Modifiers
+- **Strict Verification**: Run the smallest disproof command and quote its output.
+- **Check Real UI**: Exercise running app in browser/terminal, check edge states.
+- **Ask Questions First**: Do not stop for confirmation when a file answers the question.
+
+## Badges & Input Assembly
+
+When active, colored pills appear above the editor:
+`[⚡ orchestrate] [🎯 Loop: until test] [↑ Resume & Orient] [↓ Strict Verification]`
+
+When submitted:
+1. If an execution mode is selected, the message is prefixed with its command (e.g. `/loop --until 'npm test' `).
+2. Enabled magic keywords are placed at the beginning of the prompt text.
+3. Prepend snippets are inserted before the user prompt.
+4. Append snippets are inserted after the user prompt.
+5. Selections reset to off after each submission.

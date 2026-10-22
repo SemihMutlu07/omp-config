@@ -11,11 +11,8 @@ TARGET_USER="${USER:-$(whoami)}"
 HOME_DIR="${HOME:-/home/$TARGET_USER}"
 
 OMP_DIR="$HOME_DIR/.omp/agent"
-PI_DIR="$HOME_DIR/.pi/agent"
-SKILLS_DIR="$PI_DIR/skills"
-PI_EXT_DIR="$PI_DIR/extensions"
+SKILLS_DIR="$OMP_DIR/skills"
 OMP_EXT_DIR="$OMP_DIR/extensions"
-
 MODE="link" # default to symlink
 BACKUP_SUFFIX="$(date +%Y%m%d_%H%M%S)"
 
@@ -73,7 +70,7 @@ print_step "OMP kurulumu başlatılıyor (Kullanıcı: $TARGET_USER, Ev: $HOME_D
 
 # 1. Hedef dizinleri oluştur
 print_step "Dizinler kontrol ediliyor / oluşturuluyor..."
-mkdir -p "$OMP_DIR" "$SKILLS_DIR" "$PI_EXT_DIR" "$OMP_EXT_DIR"
+mkdir -p "$OMP_DIR" "$SKILLS_DIR" "$OMP_EXT_DIR"
 print_success "Dizin yapısı hazır."
 
 # 2. Dosya yerleştirme fonksiyonu
@@ -141,18 +138,38 @@ install_dir_contents() {
 print_step "Konfigürasyon dosyaları yerleştiriliyor..."
 install_file "$SCRIPT_DIR/config.yml" "$OMP_DIR/config.yml"
 install_file "$SCRIPT_DIR/settings.json" "$OMP_DIR/settings.json"
-install_file "$SCRIPT_DIR/AGENTS.md" "$HOME_DIR/AGENTS.md"
+# OMP loads ~/.omp/agent/AGENTS.md on its own. A second link at ~/AGENTS.md
+# is injected again when the working directory is not inside a git repository.
+if [ -L "$HOME_DIR/AGENTS.md" ] && [ "$(readlink -f "$HOME_DIR/AGENTS.md")" = "$(readlink -f "$SCRIPT_DIR/AGENTS.md")" ]; then
+  rm "$HOME_DIR/AGENTS.md"
+fi
 install_file "$SCRIPT_DIR/AGENTS.md" "$OMP_DIR/AGENTS.md"
+install_file "$SCRIPT_DIR/APPEND_SYSTEM.md" "$OMP_DIR/APPEND_SYSTEM.md"
 
 # 4. Skills ve Extensions bağla
-print_step "Skills yerleştiriliyor (~/.pi/agent/skills)..."
+print_step "Skills yerleştiriliyor (~/.omp/agent/skills)..."
 install_dir_contents "$SCRIPT_DIR/skills" "$SKILLS_DIR"
 
 print_step "Extensions yerleştiriliyor..."
 install_dir_contents "$SCRIPT_DIR/extensions" "$OMP_EXT_DIR"
-# deepseek-offpeak.ts ~/.pi/agent/extensions altında da bulunsun
-if [ -f "$SCRIPT_DIR/extensions/deepseek-offpeak.ts" ]; then
-  install_file "$SCRIPT_DIR/extensions/deepseek-offpeak.ts" "$PI_EXT_DIR/deepseek-offpeak.ts"
+
+# Extension package.json deps are gitignored (node_modules/). Install them
+# next to the source so Node can resolve imports such as shell-quote.
+print_step "Extension bağımlılıkları kuruluyor..."
+if ! command -v npm >/dev/null 2>&1; then
+  print_warn "npm yok; package.json olan eklentiler yüklenemeyebilir."
+else
+  shopt -s nullglob
+  for pkg in "$SCRIPT_DIR/extensions"/*/package.json; do
+    ext_dir="$(dirname "$pkg")"
+    if [ -f "$ext_dir/package-lock.json" ]; then
+      npm ci --omit=dev --prefix "$ext_dir"
+    else
+      npm install --omit=dev --prefix "$ext_dir"
+    fi
+    print_success "Bağımlılıklar kuruldu: $ext_dir"
+  done
+  shopt -u nullglob
 fi
 
 # 5. Mise & OMP binary kontrolü

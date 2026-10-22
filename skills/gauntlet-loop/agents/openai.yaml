@@ -1,0 +1,7 @@
+interface:
+  display_name: "Gauntlet Loop"
+  short_description: "Kod ve script değişiklikleri için varsayılan doğrulama döngüsü"
+  default_prompt: "Use $gauntlet-loop to implement and independently verify this task."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,11 +1,11 @@
 ---
 name: clarity
 description: |
-  Choose how to explain something, and climb only as far as needed. Use when the
-  user asks to explain, teach, or clarify a topic ("açıkla", "anlat", "explain",
-  "nedir", "bu ne demek", "anlamadım") and does not name a format. Picks the
-  lowest rung that removes the confusion: short text, STE100 text, ASCII diagram,
-  single-file HTML, video. Prevents explaining a one-line fact as a picture book.
+  Choose how to explain something, and climb only as far as needed. Every reply
+  already starts at strict STE100. Use this skill when the user asks to explain,
+  teach, or clarify a topic ("açıkla", "anlat", "explain", "nedir", "bu ne demek",
+  "anlamadım") and does not name a format. Add detail only when the user asks.
+  Climb to a diagram, HTML, or video only on a clear signal.
 ---
 
 # clarity — explain at the lowest rung that works
@@ -18,13 +18,13 @@ has none leaves them with nothing. Match the rung to the reader, and climb only 
 
 | # | Rung | Use when | Tool |
 | - | ---- | -------- | ---- |
-| 0 | Short plain text | The fact fits in a few lines | none |
-| 1 | 80% STE100 text | Dense, procedural, or easy to misread | `ste100` skill |
+| 0 | Strict STE100 text | Default for every reply. No extra detail. | `ste100` skill |
+| 1 | More STE100 detail | The user asks for detail, or says the answer is not clear. | `ste100` skill |
 | 2 | ASCII diagram | 3+ parts, or a flow between them | draw it in the chat |
 | 3 | Single-file HTML | The reader has no words for the topic, or needs to step through it | one self-contained file |
 | 4 | Explainer video | Explicit request only | — |
 
-Start at 0. Stop at the first rung that answers the question.
+Start at 0. Stop at the first rung that answers the question. Do not offer the next rung.
 
 ## Rung 3 (HTML) shape
 
@@ -41,8 +41,8 @@ Start at 0. Stop at the first rung that answers the question.
    text rung genuinely cannot carry the structure (a flow with 3+ parts is rung 2, not rung 1).
 3. **Climbing is additive.** Keep the text answer and add the diagram. Do not replace a clear
    paragraph with a picture book.
-4. **Match the reader, not the topic.** A harness or config question from this user is rung 0
-   or 1. Rung 3 is for a reader who has no vocabulary at all.
+4. **Match the reader, not the topic.** A harness or config question from this user stays at rung 0.
+   Rung 3 is for a reader who has no vocabulary at all.
 5. **The artifact is disposable; the chat text is the answer.** Diagrams and HTML are aids,
    not evidence, and not a substitute for saying the thing.
 6. **Do not announce the rung.** No "I'll explain this in STE100".
@@ -54,5 +54,5 @@ Start at 0. Stop at the first rung that answers the question.
   who already knows the domain.
 - **Rung 1 as fragments.** "Two files. Header differs. Dedup breaks." Missing sentence parts
   is not STE; see `ste100`.
-- **Climbing unprompted.** After the answer lands, offer the next rung in one line; do not
-  produce it unasked.
+- **Climbing unprompted.** Do not add detail, a diagram, or an offer of the next rung.
+  Wait until the user asks.

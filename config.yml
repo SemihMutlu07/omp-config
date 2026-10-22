@@ -7,85 +7,99 @@ theme:
 setupVersion: 2
 modelRoles:
   smol: google-antigravity/gemini-3.8-flash
-  slow: openai-codex/gpt-6-astra
-  plan: cursor/claude-sonnet-5-5
-  vision: openai-codex/gpt-6-astra
-  default: google-antigravity/gemini-3.8-flash:medium
+  tiny: google-antigravity/gemini-3.8-flash
+  memory: google-antigravity/gemini-3.8-flash
+  commit: google-antigravity/gemini-3.8-flash
+  judge: openai-codex/gpt-6-luna:medium
+  task: openai-codex/gpt-6-luna:high
+  vision: google-antigravity/gemini-3.8-flash:medium
+  plan: openai-codex/gpt-6.1-sol:xhigh
+  slow: openai-codex/gpt-6.1-sol:xhigh
+  advisor: openai-codex/gpt-6.1-sol:high
+  image: google-antigravity/gemini-3.8-flash:low
+  web: web/exa
+  default: xai-oauth/grok-4.7:medium
+cycleOrder:
+  - smol
+  - default
+  - slow
 task:
   agentModelOverrides:
-    reviewer: cursor/grok-4.7:xhigh
-    task: deepseek/deepseek-flash:high
-    scout: "@smol:high"
-    sonic: "@smol:high"
+    scout: "@smol"
+    sonic: "@smol"
+    task: "@task:high"
+    reviewer: "@slow:xhigh"
+    security-reviewer: "@slow:xhigh"
+  maxConcurrency: 1
+  maxRecursionDepth: 1
+  softRequestBudget: 25
+  enableEffort: false
+  showResolvedModelBadge: true
 dev:
   autoqaConsent: granted
 startup:
   quiet: false
   checkUpdate: false
   showSplash: false
-defaultThinkingLevel: high
+defaultThinkingLevel: xhigh
 enabledModels:
-  - cursor/grok-4.7
-  - cursor/grok-4.7-fast
-  - cursor/default
-  - cursor/claude-opus-5-5
-  - cursor/claude-sonnet-5-5
   - google-antigravity/gemini-3.8-flash
-  - google-antigravity/claude-sonnet-4-6
-  - google-antigravity/claude-opus-4-6
-  - openai-codex/gpt-6-astra
-  - openai-codex/gpt-6-luna
   - openai-codex/gpt-6.1-sol
-  - deepseek/deepseek-flash
-  - deepseek/deepseek-v4-flash
-  - deepseek/deepseek-v4-pro
+  - openai-codex/gpt-6-luna
+  - openai-codex/gpt-6-astra
+  - xai-oauth/grok-4.7:high
+  - xai-oauth/grok-4.7:xhigh
+modelProviderOrder:
+  - google-antigravity
+  - openai-codex
+  - cursor
+  - xai-oauth
+  - xai
 retry:
   usageAwareFallback: true
+  modelFallback: true
+  maxRetries: 2
+  fallbackOn: usage-limit
   fallbackChains:
-    cursor/grok-4.7-fast:
-      - cursor/grok-4.7
-      - google-antigravity/claude-sonnet-4-6
+    advisor:
       - google-antigravity/gemini-3.8-flash
-    cursor/grok-4.7:
-      - cursor/grok-4.7-fast
-      - google-antigravity/claude-sonnet-4-6
-      - google-antigravity/gemini-3.8-flash
-    cursor/claude-opus-5-5:
-      - cursor/claude-sonnet-5-5
-      - google-antigravity/claude-sonnet-4-6
-      - cursor/default
-    cursor/claude-sonnet-5-5:
-      - google-antigravity/claude-sonnet-4-6
-      - cursor/default
-      - google-antigravity/gemini-3.8-flash
-    google-antigravity/gemini-3.8-flash:
-      - google-antigravity/claude-sonnet-4-6
-      - cursor/default
-    google-antigravity/claude-sonnet-4-6:
-      - google-antigravity/gemini-3.8-flash
-      - cursor/default
-    google-antigravity/claude-opus-4-6:
-      - google-antigravity/claude-sonnet-4-6
-      - google-antigravity/gemini-3.8-flash
-      - cursor/default
-    openai-codex/gpt-6-astra:
-      - cursor/claude-sonnet-5-5
-      - google-antigravity/gemini-3.8-flash
-    openai-codex/gpt-6-luna:
-      - cursor/claude-sonnet-5-5
-      - google-antigravity/gemini-3.8-flash
+      - xai-oauth/grok-4.7:high
     openai-codex/gpt-6.1-sol:
-      - cursor/claude-sonnet-5-5
       - google-antigravity/gemini-3.8-flash
+      - xai-oauth/grok-4.7:high
+    openai-codex/gpt-6-astra:
+      - google-antigravity/gemini-3.8-flash
+      - xai-oauth/grok-4.7:high
 skills:
   customDirectories:
-    - ~/.pi/agent/skills
-extensions:
-  - ~/.omp/agent/extensions/deepseek-offpeak.ts
+    - ~/.omp/agent/skills
+  enableAgentsProject: false
+  enableAgentsUser: false
+  enableClaudeProject: false
+  enableClaudeUser: false
+  enableCodexUser: false
+  enablePiProject: false
+  enablePiUser: false
+extensions: []
+disabledExtensions:
+  - extension-module:opencode-free
+disabledProviders:
+  - deepseek
+commands:
+  enableOpencodeProject: false
+  enableOpencodeUser: false
 memory:
   backend: local
 memories:
   maxRolloutsPerStartup: 8
 browser:
-  headless: true
-hideThinkingBlock: true
+  headless: false
+hideThinkingBlock: false
+codexResets:
+  autoRedeem: "no"
+recap:
+  enabled: false
+providers:
+  cacheWarming: "off"
+advisor:
+  enabled: true
