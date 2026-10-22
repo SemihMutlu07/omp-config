@@ -97,6 +97,13 @@ Use when developing a concrete feature, bugfix, or codebase upkeep in a reposito
 - Check live GPT usage before GPT work and at checkpoints. At 95% in either the five-hour or weekly window, checkpoint and stop GPT work. Resume only after a fresh usage result confirms capacity; opening a session does not reset a provider limit.
 - Automation means this verified execution loop while an authorized session is running. Do not claim unattended scheduling, automatic wake-up, or integration with an untested client.
 
+## Conductor board
+
+- Start a substantial session by reading `~/Kasa/_vault/orkestra.md`. Continue the row this session owns; otherwise take the top unowned row, write yourself as owner, and act. Do not ask which task it is.
+- One conductor per board. The conductor is the only writer of the board and verifies worker claims with its own command.
+- A worker gets one ticket and one file path. Do not give it the conductor's transcript, and do not run two writers on one path.
+- Close with the OM-06 receipt from `_vault/orkestra-dogrulama-template.md`. A row is done only from command output plus a commit.
+
 ## When running OMP
 
 - These rules apply when OMP is the active harness. They do not select OMP for new work or override another harness.
