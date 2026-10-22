@@ -3,8 +3,8 @@
 # leave one in a working directory: a stray /tmp/WATCHDOG.yml once forced
 # astra:high on every session started from /tmp.
 #
-# Cost rule: advisor runs on the xAI quota (grok-4.7:high), separate from the
-# Codex plan the planner/slow roles share, and reviews once per completed
+# Cost rule: advisor prefers Codex GPT while its window has room, then Grok,
+# then Gemini (see retry.fallbackChains.advisor); it reviews once per completed
 # agent response (agent-end), not on every turn.
 
 instructions: |
@@ -17,7 +17,7 @@ instructions: |
 
 advisors:
   - name: default
-    model: xai-oauth/grok-4.7:high
+    model: openai-codex/gpt-6.1-sol:high
     reviewMode: agent-end
     instructions: |
       You are the vision and planning reviewer.

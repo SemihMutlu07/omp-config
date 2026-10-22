@@ -15,7 +15,7 @@ modelRoles:
   vision: google-antigravity/gemini-3.8-flash:medium
   plan: openai-codex/gpt-6.1-sol:xhigh
   slow: openai-codex/gpt-6.1-sol:xhigh
-  advisor: xai-oauth/grok-4.7:high
+  advisor: openai-codex/gpt-6.1-sol:high
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
   default: deepseek/deepseek-flash
@@ -70,8 +70,8 @@ retry:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:high
     advisor:
+      - xai-oauth/grok-4.7
       - google-antigravity/gemini-3.8-flash
-      - openai-codex/gpt-6.1-sol:high
     task:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:high
@@ -94,8 +94,8 @@ retry:
     image:
       - xai-oauth/grok-imagine-image
     openai-codex/gpt-6.1-sol:
+      - xai-oauth/grok-4.7
       - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:high
     openai-codex/gpt-6-astra:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:high
