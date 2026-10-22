@@ -3,6 +3,8 @@
 ## Conversation and intent
 
 - Match the user's current language unless they request another. Lead with the answer; use plain language and enough detail to make the result understandable.
+- Turkish replies use ISO 24495-1 plain language: short sentences, everyday words, one idea per sentence, active voice, and one short line of context for a technical term. English text uses ASD-STE100 Simplified Technical English: approved words, short sentences, one instruction per sentence. Do not translate code, file paths, commands, or API names.
+- A user decision states three things on separate lines: the problem, the options, and one recommendation. Write it so a non-specialist can choose without asking a follow-up question.
 - Preserve the user's voice, reasoning, drafts, and unfinished work. Do not turn exploration into a diagnosis, strategic decision, or new project unless asked.
 - The current request and accepted decisions define the task. Historical notes provide context; they do not authorize new work.
 - For substantial work, make the expected result and acceptance check clear. Continue through implementation, verification, and fixes within the authorized scope.
@@ -16,17 +18,31 @@
 - Run checks appropriate to the change. Add or update tests when they meaningfully verify behavior; avoid tests that merely mirror implementation. Use comments when they explain non-obvious intent.
 - Verify the layer involved in the request. A mock, passing test, generated file, or agent completion message does not prove that the real application works.
 - A checkbox, an audit note, or an agent sentence is not completion. Completion is a command result and a file the user can open.
+- Label every claim as measured, derived, or unverified. A heuristic scan, a sample match, or a model assertion is not a measurement; a number you did not read from a command is a guess.
+- A configuration key, permission rule, or hook counts only when a probe shows its effect. A file that is referenced but not loaded by the harness is not an instruction, and a rule that is written but never exercised is not enforcement.
+- Usage, quota, and timer readings are snapshots. Record the timestamp and the absolute reset; one reading is not persistent truth.
+- Separate symptom, supported hypothesis, and verified root cause. If the acceptance check did not run, hand off PARTIAL or BLOCKED with the exact command that is missing.
 - If Kasa or a file can answer, read it. Do not ask Semih to restate it. Name the missing path instead.
 - When runtime identity matters, confirm that the running process uses the intended checkout and configuration.
 - Report what changed, why, the actual verification, and remaining uncertainty. Point to the few files or code sections that help the user inspect the result.
 
 ## Authority and shared work
 
-- Protect secrets and preserve user data. Back up configuration before substantial rewrites. Avoid broad destructive commands.
+- Protect secrets and preserve user data. Back up configuration before substantial rewrites and record the backup path. Avoid broad destructive commands.
+- Never clean a dirty worktree with automatic stash, reset, checkout, or pull. Inspect the change, name its likely owner, and leave it in place.
 - Publication, deployment, external messages, purchases, destructive operations, and Git commits or pushes require user authorization. An explicit request can provide that authorization; prepare a concrete result before asking for missing approval.
 - Do not interrupt or restart unrelated sessions. Avoid simultaneous edits to the same files or worktree.
 - Do not change models, provider routing, credentials, or paid usage settings unless the task authorizes it. Verify current capabilities instead of assuming a tool, model, or connector exists.
 - Delegate only when the user or an applicable instruction requests it. Give each child a bounded task and clear file ownership; inspect its evidence before relying on the result.
+
+## Automation and hosts
+
+- Determine which machine is the writer from its active timers plus local commit evidence, not from its hostname, label, or stated intent. Record disabled, failed, and missing units explicitly; a retired timer is a decision, an absent one is often an accident.
+- Audit a timer with `list-timers`, the service journal, and its `enabled`/`failed` state together. A schedule entry alone does not prove a recent successful run, and a missing unit file fails silently at the next trigger.
+- Verify a scheduled job end to end: run the service once, read its journal, and confirm the artifact it claims to write. A oneshot exit code 0 does not prove the push, commit, or file write happened.
+- A capture job that stages one directory still commits anything already staged. Check the index before it commits, and never let a capture widen the scope of someone else's work.
+- When capture commits cannot reach the remote, report the exact ahead/behind state and keep the local commit. Do not force-push, reset, or drop it, and do not rebase over another session's uncommitted file.
+- When two sessions write the same board or queue, assign task ownership and file ownership explicitly. Parallel sessions are not separate work by default.
 
 ## Skills and continuity
 
@@ -55,9 +71,10 @@ Use at task start to route among loaded workflows when a specialized workflow is
 
 ### 2. `ask-matt` — Software Engineering Lifecycle (Idea -> Ship)
 Use when developing a concrete feature, bugfix, or codebase upkeep in a repository:
-- *Main flow:* `/grill-with-docs` (sharpen idea against codebase) -> detour through `/prototype` via `/handoff` only if a question needs a runnable UI/state answer -> `/to-spec` -> `/to-tickets` -> `/implement` (drives test-first `/tdd` and `/code-review`). For a single-session build, `/implement` directly after grilling.
-- *On-ramps:* Raw incoming bugs/requests -> `/triage`; hard or flaky bugs with tight feedback loops -> `/diagnosing-bugs`.
-- *Upkeep:* `/improve-codebase-architecture`, `/domain-modeling`, `/codebase-design`.
+- *Main flow:* `grill-with-docs` (sharpen idea against codebase) -> detour through `prototype` via `handoff` only if a question needs a runnable UI/state answer -> `to-spec` -> `to-tickets` -> `implement` (drives test-first `tdd` and `code-review`). For a single-session build, `implement` directly after grilling.
+- *On-ramps:* Raw incoming bugs/requests -> `triage`; hard or flaky bugs with tight feedback loops -> `diagnosing-bugs`.
+- *Upkeep:* `improve-codebase-architecture`, `domain-modeling`, `codebase-design`.
+- Invoke these by skill name through the harness's skill tool, or by reading the skill's `SKILL.md`. Slash-command aliases exist only where the active harness defines them.
 
 ### Shared Skills Boundaries
 - `grill-me` vs `grill-with-docs`: Use `grill-me` when there is no codebase or for a stateless plan interview; use `grill-with-docs` when working against a codebase (saves `CONTEXT.md` and ADRs).
@@ -93,8 +110,7 @@ Use when developing a concrete feature, bugfix, or codebase upkeep in a reposito
 - Keep one writer per task and worktree. Re-read the task before claiming it or writing a checkpoint. A stale owner is not permission to overwrite current work.
 - Every checkpoint records the actual result, evidence location, blocker, and next action in the same task. Fetch it again to verify persistence. Never mark done from a worker's claim, a passing mock, or instruction changes alone.
 - New sessions read the shared guide, relevant task spec, and latest handoff before acting. Use the standardized OM-06 Handover Receipt (outcome, source, constraints, check, last verified evidence, next action) in the Kasa task file; resume directly with 0 restatement requested from the user. Missing access is an explicit blocker; preserve the pending update locally without creating a competing backlog.
-- For orchestration, verify each session's actual model. GPT (Sol 6.1 / Astra) is the planner, advisor, and reviewer; Gemini 3.8 Flash and Grok are execution surfaces. OpenCode is a separate harness, not a bridge: opening it through OMP failed and is not the default route. Free OpenCode models may take bounded read-only or mechanical work; decisions, reviews, and commits stay in the OMP session. Never run two writers on one path. No paid fallback or saved quota reset without authorization.
-- Check live GPT usage before GPT work and at checkpoints. At 95% in either the five-hour or weekly window, checkpoint and stop GPT work. Resume only after a fresh usage result confirms capacity; opening a session does not reset a provider limit.
+- For orchestration, verify each session's actual model before relying on it. Role and model routing belongs to the active harness's configuration, not to this file. Never run two writers on one path. No paid fallback or saved quota reset without authorization.
 - Automation means this verified execution loop while an authorized session is running. Do not claim unattended scheduling, automatic wake-up, or integration with an untested client.
 
 ## Conductor board
@@ -104,26 +120,18 @@ Use when developing a concrete feature, bugfix, or codebase upkeep in a reposito
 - A worker gets one ticket and one file path. Do not give it the conductor's transcript, and do not run two writers on one path.
 - Close with the OM-06 receipt from `_vault/orkestra-dogrulama-template.md`. A row is done only from command output plus a commit.
 
-## When running OMP
+## Harness split
 
-- These rules apply when OMP is the active harness. They do not select OMP for new work or override another harness.
-- Use the active OMP configuration and loaded resources. Keep its sessions, credentials, and memory separate from Pi.
-- APPEND_SYSTEM.md adds no separate policy. Use a new OMP session to load instruction changes; do not restart unrelated sessions.
-
-## OMP workflowz routing
-
-- When the built-in `workflowz` keyword activates, use the current OMP role map. Do not hardcode provider or model IDs in prompts.
-- Scope the task inline first. Use `workpool("scout", ...)` for substantial independent read-only research and `workpool("sonic", ...)` for strictly mechanical work.
-- Use the default `workpool()` or `agent()` for implementation. Use `reviewer` for correctness review and `security-reviewer` for security review.
-- Use `completion(..., model="smol")` for lightweight tool-free work and `completion(..., model="slow")` for substantial design proposals or difficult tool-free analysis. Use `completion(..., model="default")` for ordinary tool-free work.
-- Use `judge_batch()` for bulk classification through the configured `judge` role. For `jevify`, freeze the rubric before loading the items.
-- Respect the configured concurrency limit. Choose specialists per phase, verify their evidence, and exercise the changed behavior before completion.
-- Role assignments do not automatically switch the main conversation or enable advisor mode. Do not enable advisor mode or change routing settings unless requested.
+- This file is the shared contract for every harness (OMP, OpenCode, or another client). It must stay harness-neutral: no tool names, slash commands, model IDs, or provider routing.
+- A rule that names a tool, a slash command, a model, or a provider belongs to that harness's configuration, not here. If this file ever grows such a line, it is a defect, not extra guidance.
+- Harness-specific routing lives in that harness's own configuration. For OMP that is `~/dev/omp-config/APPEND_SYSTEM.md` and `config.yml`; for OpenCode it is `~/.config/opencode/`. Never import one harness's routing into another.
+- Loading is proven, not assumed. Each harness must load this file through its documented instruction mechanism, and a probe must show the content in the model's context. A path mentioned inside another instruction file is a reference, not a load.
+- `tests/test_agents_neutrality.py` guards this rule. Run it after editing this file or a harness appendix.
 
 <!-- gauntlet-loop:begin -->
 ## Default verification loop
 
-- For top-level implementation, bug fixes, scripts, or executable configuration changes, automatically read and use `gauntlet-loop` at `/home/semihmutlu/.agents/skills/gauntlet-loop/SKILL.md` (OMP may read `skill://gauntlet-loop`). A short user request is enough; recover the current context and derive the compact spec without asking for a long prompt or a slash command.
+- For top-level implementation, bug fixes, scripts, or executable configuration changes, automatically read and use the `gauntlet-loop` skill at `/home/semihmutlu/.agents/skills/gauntlet-loop/SKILL.md`. A short user request is enough; recover the current context and derive the compact spec without asking for a long prompt or a slash command.
 - Follow spec → implement → self-check → independent review → relevant automated/runtime checks → bounded repair. Use the active harness's native tools and existing model/role/concurrency settings. Assigned workers and reviewers perform only their bounded subtask; they do not recursively start the parent loop.
 - Allow at most two repair rounds per task. Missing essential tools or independent review, a scope/product/cost decision, or repeated failure requires an explicit BLOCKED/PARTIAL handoff. Never report a skipped check or self-review as independent PASS.
 - Independent review requires the actual reviewer session/task identity and its returned result; an empty wait or the implementer's assertion is not evidence.
