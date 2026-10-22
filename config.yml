@@ -15,10 +15,10 @@ modelRoles:
   vision: google-antigravity/gemini-3.8-flash:medium
   plan: openai-codex/gpt-6.1-sol:xhigh
   slow: openai-codex/gpt-6.1-sol:xhigh
-  advisor: openai-codex/gpt-6.1-sol:high
-  image: google-antigravity/gemini-3.8-flash:low
+  advisor: xai-oauth/grok-4.7:high
+  image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
-  default: google-antigravity/gemini-3.8-flash:medium
+  default: deepseek/deepseek-flash
 cycleOrder:
   - smol
   - default
@@ -49,20 +49,20 @@ enabledModels:
   - openai-codex/gpt-6-astra
   - xai-oauth/grok-4.7:high
   - xai-oauth/grok-4.7:xhigh
+  - deepseek/*
 modelProviderOrder:
   - google-antigravity
   - openai-codex
   - cursor
   - xai-oauth
   - xai
+  - deepseek
 retry:
   usageAwareFallback: true
   modelFallback: true
   maxRetries: 2
   fallbackOn: usage-limit
   fallbackChains:
-    # Tier 1 — judgment (planner, advisor, reviewer). GPT first, then the
-    # provider that still has quota, then Grok.
     plan:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:xhigh
@@ -71,19 +71,16 @@ retry:
       - xai-oauth/grok-4.7:high
     advisor:
       - google-antigravity/gemini-3.8-flash
-      - xai-oauth/grok-4.7:high
+      - openai-codex/gpt-6.1-sol:high
     task:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:high
     judge:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:medium
-    # Tier 2 — execution. Grok first, then Gemini, and GPT only as the last
-    # resort so a Grok outage does not silently spend Codex planning quota.
     default:
       - google-antigravity/gemini-3.8-flash
       - openai-codex/gpt-6.1-sol:medium
-    # Tier 3 — cheap/mechanical. Gemini first, Grok second.
     smol:
       - xai-oauth/grok-4.7:medium
     tiny:
@@ -95,8 +92,7 @@ retry:
     vision:
       - xai-oauth/grok-4.7:medium
     image:
-      - xai-oauth/grok-4.7:medium
-    # Direct model picks (/model ...) fall back the same way as their tier.
+      - xai-oauth/grok-imagine-image
     openai-codex/gpt-6.1-sol:
       - google-antigravity/gemini-3.8-flash
       - xai-oauth/grok-4.7:high
@@ -116,8 +112,7 @@ skills:
 extensions: []
 disabledExtensions:
   - extension-module:opencode-free
-disabledProviders:
-  - deepseek
+disabledProviders: []
 commands:
   enableOpencodeProject: false
   enableOpencodeUser: false
