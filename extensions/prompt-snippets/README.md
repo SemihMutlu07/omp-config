@@ -62,6 +62,17 @@ kullanımı değil.
 
 Kural: aynı davranış `AGENTS.md`'de de varsa snippet tutulmaz; tek kaynak kalır.
 
+### OpenCode aynı snippet'leri okur
+
+Snippet dosyaları tek kaynaktır: `~/.config/opencode/plugins/prompt-snippets.ts` bu dizindeki
+`*.md` dosyalarını doğrudan okur. Her dosyanın frontmatter'ına eklenen `alias` alanı OpenCode'un
+token/komut adıdır (`sv`, `resume`, `ui`, `better`). OMP parser'ı bu alanı yok sayar.
+
+- Token: `hatayı düzelt ;sv` → gövde append, `;resume` / `;better` → gövde prepend.
+- Komut: `/sv hatayı düzelt` — `/` menüsünde görünür.
+- Birden çok token `order` sırasıyla uygulanır; kod bloğu içindeki token'lara dokunulmaz.
+- Yeni snippet eklerken `alias` yazmazsan OpenCode dosya adını (`resume-orient`) alias kabul eder.
+
 ## Badges & Input Assembly
 
 When active, colored pills appear above the editor:
