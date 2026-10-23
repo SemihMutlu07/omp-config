@@ -5,7 +5,7 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 ## Usage
 
 - Press **alt+s** or run **/snippets** (or **/cockpit**) to open the cockpit menu.
-  - `↑`/`↓` or `1`-`4` navigate across sections (1: Keywords, 2: Loops, 3: Prepend, 4: Append).
+  - `↑`/`↓` or `1`-`5` navigate across sections (1: Keywords, 2: Loops, 3: Skills, 4: Prepend, 5: Append).
   - `Space` toggles items (Execution Modes are mutually exclusive).
   - `c` clears all active selections immediately.
   - `Tab` previews item details, command syntax, or snippet markdown.
@@ -24,11 +24,24 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 - **Loop (Test --until)**: Automatically re-submits the prompt after each turn until a test command exits with code 0 (`/loop --until 'npm test'`).
 - **Loop (3x count)**: Automatically repeats prompt for 3 iterations (`/loop 3`).
 
-### 3. ↑ Prepend Modifiers
+### 3. 🧩 Skills
+- Curated launcher, not a full skill browser. Selecting one injects
+  `Read skill://<name>/SKILL.md and follow it for this task.` before the prompt.
+- **ask-pocock**: routes to a loaded workflow; never installs a missing skill.
+- **ask-matt**: idea → spec → ticket → implement lifecycle.
+- **grill-for-unknowns**: interrogates a plan against docs before building.
+- **clarity**: plain explanation without a forced format.
+- **prototype**: answers one design question with throwaway code.
+- **research**: cited Markdown from primary sources.
+- **code-review**: two-axis review of a diff.
+- **gauntlet-loop**: spec → implement → independent review → runtime proof.
+- Skills are pointers, not copied prose: the skill file stays the single source.
+
+### 4. ↑ Prepend Modifiers
 - **Resume & Orient**: Three lines, each with a file path: last verified result, open task, next action.
 - **Better**: Focus on professional depth, raw inputs, tools, and verification.
 
-### 4. ↓ Append Modifiers
+### 5. ↓ Append Modifiers
 - **Strict Verification**: Name the smallest disproof command, run it, quote the output.
 - **Check Real UI**: Exercise loading, empty, error, and interaction states at the two extreme viewports.
 
@@ -72,6 +85,12 @@ token/komut adıdır (`sv`, `resume`, `ui`, `better`). OMP parser'ı bu alanı y
 - Komut: `/sv hatayı düzelt` — `/` menüsünde görünür.
 - Birden çok token `order` sırasıyla uygulanır; kod bloğu içindeki token'lara dokunulmaz.
 - Yeni snippet eklerken `alias` yazmazsan OpenCode dosya adını (`resume-orient`) alias kabul eder.
+
+## Development
+
+Extension code loads once per OMP process. After editing `index.ts` or a snippet,
+start a new OMP session (or restart) to see the change; this session keeps the
+old module in memory.
 
 ## Badges & Input Assembly
 

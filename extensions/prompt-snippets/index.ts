@@ -4,6 +4,7 @@
  * - Press alt+s or run /snippets to open the cockpit menu:
  *     - ⚡ Magic Keywords: OMP native modes (orchestrate, workflowz, ultrathink, jevify)
  *     - 🎯 Execution Modes: Loop (--until test, 3x)
+ *     - 🧩 Skills: Curated skill launcher (ask-pocock, ask-matt, gauntlet-loop, ...)
  *     - ↑ Prepend Modifiers: Task planning, orientation, prompt refinement
  *     - ↓ Append Modifiers: Strict verification, scope fence, UI check, question-first
  * - Space: toggle (execution modes are mutually exclusive)
@@ -12,12 +13,13 @@
  * - Esc: cancel
  *
  * Active selections appear as badge pills above the editor.
- * When sent, execution commands, magic keywords, and snippets are assembled cleanly.
+ * When sent, execution commands, magic keywords, skill directives, and snippets are assembled cleanly.
  * Toggles reset to off after each message and at session start.
  */
 
 import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
@@ -107,8 +109,90 @@ export const EXECUTION_MODES: ExecutionModeItem[] = [
 	},
 ];
 
+export interface SkillItem {
+	type: "skill";
+	id: string;
+	skill: string;
+	name: string;
+	description: string;
+	detail: string;
+}
+
+export const SKILLS: SkillItem[] = [
+	{
+		type: "skill",
+		id: "skill:ask-pocock",
+		skill: "ask-pocock",
+		name: "ask-pocock",
+		description: "Hangi yüklü iş akışı uygun? Yönlendirici",
+		detail: "Yüklü beceri listesine bakar, göreve uyan workflow'u seçer. Eksik beceriyi kurmaz veya varsaymaz.",
+	},
+	{
+		type: "skill",
+		id: "skill:ask-matt",
+		skill: "ask-matt",
+		name: "ask-matt",
+		description: "Fikir → spec → ticket → implement yaşam döngüsü",
+		detail: "Yazılım işini ana akışa bağlar: grill, spec, ticket, implement, review. Tek oturumluk işte doğrudan implement.",
+	},
+	{
+		type: "skill",
+		id: "skill:grill-for-unknowns",
+		skill: "grill-for-unknowns",
+		name: "grill-for-unknowns",
+		description: "Planı dokümanlara karşı sorgula, bilinmeyenleri çıkar",
+		detail: "Uygulamadan önce varsayımları tek tek sınar; yanıtı doküman veya kodda olan soruyu sana sormaz.",
+	},
+	{
+		type: "skill",
+		id: "skill:clarity",
+		skill: "clarity",
+		name: "clarity",
+		description: "Sade, format dayatmayan açıklama",
+		detail: "Bir konuyu jargon ve şablon olmadan açıklar. Açıklama istendiğinde kullanılır.",
+	},
+	{
+		type: "skill",
+		id: "skill:prototype",
+		skill: "prototype",
+		name: "prototype",
+		description: "Tek tasarım sorusunu çalışan kodla yanıtla",
+		detail: "UI veya durum modeli kâğıtta çözülmüyorsa küçük, atılabilir bir programla karar verir.",
+	},
+	{
+		type: "skill",
+		id: "skill:research",
+		skill: "research",
+		name: "research",
+		description: "Birincil kaynaklardan atıflı Markdown",
+		detail: "Okuma işini arka plan ajanına verir; sonucu kaynak atıflı bir dosya olarak bırakır.",
+	},
+	{
+		type: "skill",
+		id: "skill:code-review",
+		skill: "code-review",
+		name: "code-review",
+		description: "Branch/PR diff'ini iki eksende incele",
+		detail: "Standartlar ve spec ekseninde bağımsız inceleme yapar; kriteri gevşetmeden PASS/FAIL verir.",
+	},
+	{
+		type: "skill",
+		id: "skill:gauntlet-loop",
+		skill: "gauntlet-loop",
+		name: "gauntlet-loop",
+		description: "Spec → uygula → bağımsız review → runtime",
+		detail: "Kod değişikliğinde sabit kabul kriteri, bağımsız reviewer ve gerçek yüzey doğrulamasıyla ilerler.",
+	},
+];
+
 const extensionDir = dirname(fileURLToPath(import.meta.url));
 const snippetsDir = join(extensionDir, "snippets");
+const skillRoots = [join(homedir(), ".omp/agent/skills"), join(homedir(), ".agents/skills")];
+
+/** Curated skills that actually exist on disk; a missing skill must not look runnable. */
+export function availableSkills(): SkillItem[] {
+	return SKILLS.filter((s) => skillRoots.some((root) => existsSync(join(root, s.skill, "SKILL.md"))));
+}
 const WIDGET_ID = "prompt-snippets";
 
 export function parseSnippet(filename: string, raw: string): Snippet | null {
@@ -178,7 +262,14 @@ export function formatBadges(snippets: Snippet[], enabled: Set<string>, theme: T
 		}
 	}
 
-	// 3. Prepend & Append Snippets
+	// 3. Skills
+	for (const s of SKILLS) {
+		if (enabled.has(s.id)) {
+			pills.push(theme.fg("accent", `[🧩 ${s.name}]`));
+		}
+	}
+
+	// 4. Prepend & Append Snippets
 	const activeSnippets = snippets.filter((s) => enabled.has(s.id));
 	const prepends = activeSnippets.filter((s) => s.placement === "prepend");
 	const appends = activeSnippets.filter((s) => s.placement === "append");
@@ -197,6 +288,7 @@ export function formatBadges(snippets: Snippet[], enabled: Set<string>, theme: T
 export type CockpitItem =
 	| { kind: "keyword"; data: MagicKeywordItem }
 	| { kind: "execution"; data: ExecutionModeItem }
+	| { kind: "skill"; data: SkillItem }
 	| { kind: "snippet"; data: Snippet };
 
 export interface SnippetsMenuOptions {
@@ -225,11 +317,13 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 
 	const prepends = snippets.filter((s) => s.placement === "prepend");
 	const appends = snippets.filter((s) => s.placement === "append");
+	const skills = availableSkills();
 
 	// Build unified items list
 	const items: CockpitItem[] = [
 		...MAGIC_KEYWORDS.map((k) => ({ kind: "keyword" as const, data: k })),
 		...EXECUTION_MODES.map((e) => ({ kind: "execution" as const, data: e })),
+		...skills.map((s) => ({ kind: "skill" as const, data: s })),
 		...prepends.map((s) => ({ kind: "snippet" as const, data: s })),
 		...appends.map((s) => ({ kind: "snippet" as const, data: s })),
 	];
@@ -239,77 +333,83 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 	let cursor = 0;
 	let listScroll = 0;
 	let previewScroll = 0;
-	const itemRow = (item: CockpitItem, idx: number, width: number): string => {
+	const ROW_PREFIX_WIDTH = 6; // "› " pointer + "[x] " checkbox
+
+	/** One item: name plus description wrapped with a hanging indent, never cut mid-word. */
+	const itemRows = (item: CockpitItem, idx: number, width: number): string[] => {
 		const isSelected = working.has(item.data.id);
 		const isCursor = idx === cursor;
 		const pointer = isCursor ? theme.fg("accent", "› ") : "  ";
 		const checkbox = isSelected ? theme.fg("success", "[x]") : theme.fg("dim", "[ ]");
+		const prefix = `${pointer}${checkbox} `;
+		const indent = " ".repeat(ROW_PREFIX_WIDTH);
 		const name = isCursor ? theme.bold(item.data.name) : item.data.name;
 		const desc = item.data.description ? theme.fg("dim", ` — ${item.data.description}`) : "";
-		return truncateToWidth(`${pointer}${checkbox} ${name}${desc}`, width);
+		const avail = Math.max(10, width - ROW_PREFIX_WIDTH);
+		return wrapTextWithAnsi(`${name}${desc}`, avail).map((line, i) =>
+			truncateToWidth(i === 0 ? `${prefix}${line}` : `${indent}${line}`, width),
+		);
+	};
+
+	/** Section header with a right-aligned "seçili/toplam" counter. */
+	const sectionHeader = (label: string, color: string, ids: string[], width: number): string => {
+		const active = ids.filter((id) => working.has(id)).length;
+		const left = theme.bold(theme.fg(color, label));
+		const right = theme.fg("dim", `${active}/${ids.length}`);
+		const gap = Math.max(1, width - visibleWidth(left) - visibleWidth(right) - 1);
+		return truncateToWidth(`${left}${" ".repeat(gap)}${right}`, width);
 	};
 
 	const buildListRows = (width: number): { text: string; itemIndex: number | null }[] => {
 		const rows: { text: string; itemIndex: number | null }[] = [];
 		let currentIndex = 0;
 
+		const pushItem = (item: CockpitItem): void => {
+			const idx = currentIndex++;
+			for (const text of itemRows(item, idx, width)) rows.push({ text, itemIndex: idx });
+		};
+
 		// 1. Magic Keywords Section
 		rows.push({
-			text: truncateToWidth(
-				theme.bold(theme.fg("accent", "⚡ MAGIC KEYWORDS")) + theme.fg("dim", " (OMP yerleşik sözleşmeler)"),
-				width,
-			),
+			text: sectionHeader("⚡ Magic Keywords", "accent", MAGIC_KEYWORDS.map((k) => k.id), width),
 			itemIndex: null,
 		});
-		for (const kw of MAGIC_KEYWORDS) {
-			const idx = currentIndex++;
-			rows.push({ text: itemRow({ kind: "keyword", data: kw }, idx, width), itemIndex: idx });
-		}
+		for (const kw of MAGIC_KEYWORDS) pushItem({ kind: "keyword", data: kw });
 
 		// 2. Execution Modes Section
 		rows.push({ text: "", itemIndex: null });
 		rows.push({
-			text: truncateToWidth(
-				theme.bold(theme.fg("warning", "🎯 EXECUTION MODES")) + theme.fg("dim", " (Döngü kontrolü)"),
-				width,
-			),
+			text: sectionHeader("🎯 Execution Modes", "warning", EXECUTION_MODES.map((e) => e.id), width),
 			itemIndex: null,
 		});
-		for (const ex of EXECUTION_MODES) {
-			const idx = currentIndex++;
-			rows.push({ text: itemRow({ kind: "execution", data: ex }, idx, width), itemIndex: idx });
-		}
+		for (const ex of EXECUTION_MODES) pushItem({ kind: "execution", data: ex });
 
-		// 3. Prepend Snippets Section
+		// 3. Skills Section
+		rows.push({ text: "", itemIndex: null });
+		rows.push({
+			text: sectionHeader("🧩 Skills", "accent", skills.map((s) => s.id), width),
+			itemIndex: null,
+		});
+		for (const s of skills) pushItem({ kind: "skill", data: s });
+
+		// 4. Prepend Snippets Section
 		if (prepends.length > 0) {
 			rows.push({ text: "", itemIndex: null });
 			rows.push({
-				text: truncateToWidth(
-					theme.bold(theme.fg("accent", "↑ PREPEND MODIFIERS")) + theme.fg("dim", " (İstem öncesi niyet)"),
-					width,
-				),
+				text: sectionHeader("↑ Prepend Modifiers", "accent", prepends.map((s) => s.id), width),
 				itemIndex: null,
 			});
-			for (const s of prepends) {
-				const idx = currentIndex++;
-				rows.push({ text: itemRow({ kind: "snippet", data: s }, idx, width), itemIndex: idx });
-			}
+			for (const s of prepends) pushItem({ kind: "snippet", data: s });
 		}
 
-		// 4. Append Snippets Section
+		// 5. Append Snippets Section
 		if (appends.length > 0) {
 			rows.push({ text: "", itemIndex: null });
 			rows.push({
-				text: truncateToWidth(
-					theme.bold(theme.fg("warning", "↓ APPEND MODIFIERS")) + theme.fg("dim", " (İstem sonrası sınır ve test)"),
-					width,
-				),
+				text: sectionHeader("↓ Append Modifiers", "warning", appends.map((s) => s.id), width),
 				itemIndex: null,
 			});
-			for (const s of appends) {
-				const idx = currentIndex++;
-				rows.push({ text: itemRow({ kind: "snippet", data: s }, idx, width), itemIndex: idx });
-			}
+			for (const s of appends) pushItem({ kind: "snippet", data: s });
 		}
 
 		return rows;
@@ -328,7 +428,12 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 				rows.push(truncateToWidth(wrapped, width));
 			}
 			rows.push("");
-			rows.push(truncateToWidth(theme.fg("dim", "Etki: Bu sözcük istemin başına doğrudan eklenir ve OMP'nin özel çalışma modunu tetikler."), width));
+			for (const wrapped of wrapTextWithAnsi(
+				theme.fg("dim", "Etki: Bu sözcük istemin başına doğrudan eklenir ve OMP'nin özel çalışma modunu tetikler."),
+				width,
+			)) {
+				rows.push(truncateToWidth(wrapped, width));
+			}
 		} else if (item.kind === "execution") {
 			rows.push(truncateToWidth(theme.fg("warning", `Execution Mode · Komut Öneki: ${d.commandPrefix.trim()}`), width));
 			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
@@ -337,8 +442,27 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 				rows.push(truncateToWidth(wrapped, width));
 			}
 			rows.push("");
-			rows.push(truncateToWidth(theme.fg("dim", `Sözdizimi: ${d.commandPrefix}<isteminiz>`), width));
-		} else {
+			for (const wrapped of wrapTextWithAnsi(
+				theme.fg("dim", `Sözdizimi: ${d.commandPrefix}<isteminiz>`),
+				width,
+			)) {
+				rows.push(truncateToWidth(wrapped, width));
+			}
+		} else if (item.kind === "skill") {
+			rows.push(truncateToWidth(theme.fg("accent", `Skill · skill://${d.skill}/SKILL.md`), width));
+			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
+			rows.push(truncateToWidth(theme.bold("Açıklama:"), width));
+			for (const wrapped of wrapTextWithAnsi(d.detail, width)) {
+				rows.push(truncateToWidth(wrapped, width));
+			}
+			rows.push("");
+			for (const wrapped of wrapTextWithAnsi(
+				theme.fg("dim", "Etki: Seçilirse istemin başına bu beceriyi okuma ve uygulama direktifi eklenir."),
+				width,
+			)) {
+				rows.push(truncateToWidth(wrapped, width));
+			}
+		} else if (item.kind === "snippet") {
 			const s = d as Snippet;
 			rows.push(truncateToWidth(theme.fg("dim", `${s.placement} · order ${s.order} · ${s.id}`), width));
 			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
@@ -356,15 +480,18 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 		lines: string[],
 		scroll: number,
 		maxView: number,
-		focusRow?: number,
+		focusStart?: number,
+		focusEnd?: number,
 	): { out: string[]; scroll: number } => {
 		const clipped = lines.length > maxView;
 		const view = clipped ? Math.max(1, maxView - 2) : maxView;
 
 		let s = Math.min(Math.max(0, scroll), Math.max(0, lines.length - view));
-		if (focusRow !== undefined) {
-			if (focusRow < s) s = focusRow;
-			else if (focusRow >= s + view) s = focusRow - view + 1;
+		if (focusStart !== undefined) {
+			const end = focusEnd ?? focusStart;
+			if (end - focusStart + 1 >= view) s = focusStart;
+			else if (focusStart < s) s = focusStart;
+			else if (end >= s + view) s = end - view + 1;
 		}
 
 		const visible = lines.slice(s, s + view);
@@ -385,7 +512,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 	return {
 		render(width: number): string[] {
 			const termRows = tui.terminal?.rows ?? 24;
-			const maxView = Math.max(5, termRows - 5);
+			const maxView = Math.max(5, termRows - 8);
 
 			let content: string[];
 			let title: string;
@@ -393,14 +520,19 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 
 			if (mode === "list") {
 				const rows = buildListRows(width);
-				const cursorRow = rows.findIndex((r) => r.itemIndex === cursor);
-				const v = viewport(rows.map((r) => r.text), listScroll, maxView, cursorRow);
+				const cursorRows = rows.flatMap((r, i) => (r.itemIndex === cursor ? [i] : []));
+				const v = viewport(
+					rows.map((r) => r.text),
+					listScroll,
+					maxView,
+					cursorRows[0],
+					cursorRows[cursorRows.length - 1],
+				);
 				content = v.out;
 				listScroll = v.scroll;
 				const activeCount = working.size;
-				const activeStr = activeCount > 0 ? ` (${activeCount} seçili)` : "";
-				title = `Prompt Cockpit${activeStr}`;
-				hints = "↑↓/1-4 gez • Space seç/kaldır • c temizle • Tab detay • Enter uygula • Esc vazgeç";
+				title = activeCount > 0 ? `Prompt Cockpit · ${activeCount} seçili` : "Prompt Cockpit";
+				hints = "↑↓ gez · 1-5 bölüm · Space seç · c temizle · Tab detay · Enter uygula · Esc çık";
 			} else {
 				const item = items[cursor];
 				const rows = buildPreviewRows(item, width);
@@ -408,9 +540,15 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 				content = v.out;
 				previewScroll = v.scroll;
 				const isToggled = working.has(item.data.id);
-				title = `Detay: ${item.data.name} [${isToggled ? "x" : " "}]`;
-				hints = "↑↓ kaydır • Space seç/kaldır • Tab/Esc geri • Enter uygula";
+				title = `Detay · ${item.data.name}${isToggled ? " · seçili" : ""}`;
+				hints = "↑↓ kaydır · Space seç · Tab/Esc geri · Enter uygula";
 			}
+
+			const activeCount = working.size;
+			const stateText =
+				activeCount === 0
+					? "Hiçbiri seçili değil. Bu bir todo listesi değil: seçim yalnız bir sonraki mesaja eklenir."
+					: `${activeCount} seçim bir sonraki mesaja eklenecek; gönderimden sonra sıfırlanır.`;
 
 			const titleText = ` ${title} `;
 			const titleLen = visibleWidth(titleText);
@@ -421,13 +559,17 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 				width,
 			);
 			const footerDivider = theme.fg("accent", "─".repeat(width));
-			const hintLine = truncateToWidth(theme.fg("dim", ` ${hints}`), width);
+			const footerLines = [hints, stateText].flatMap((text) =>
+				wrapTextWithAnsi(theme.fg("dim", text), Math.max(10, width - 2)).map((line) =>
+					truncateToWidth(` ${line}`, width),
+				),
+			);
 
 			return [
 				headerLine,
 				...content,
 				footerDivider,
-				hintLine,
+				...footerLines,
 			];
 		},
 		invalidate() {},
@@ -435,7 +577,8 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 			if (mode === "list") {
 				const kwStart = 0;
 				const execStart = MAGIC_KEYWORDS.length;
-				const prepStart = execStart + EXECUTION_MODES.length;
+				const skillStart = execStart + EXECUTION_MODES.length;
+				const prepStart = skillStart + skills.length;
 				const appStart = prepStart + prepends.length;
 
 				if (data === "c" || data === "C") {
@@ -450,11 +593,15 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 					cursor = execStart;
 					tui.requestRender();
 					return;
-				} else if (data === "3" && prepends.length > 0) {
+				} else if (data === "3" && skills.length > 0) {
+					cursor = skillStart;
+					tui.requestRender();
+					return;
+				} else if (data === "4" && prepends.length > 0) {
 					cursor = prepStart;
 					tui.requestRender();
 					return;
-				} else if (data === "4" && appends.length > 0) {
+				} else if (data === "5" && appends.length > 0) {
 					cursor = appStart;
 					tui.requestRender();
 					return;
@@ -531,6 +678,26 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 	};
 }
 
+/** Resolve the selected cockpit ids into the exact text sent for one turn. */
+export function assemblePrompt(working: Set<string>, snippets: Snippet[], text: string): string {
+	const activeKeywords = MAGIC_KEYWORDS.filter((k) => working.has(k.id)).map((k) => k.keyword);
+	const activeExecution = EXECUTION_MODES.find((e) => working.has(e.id));
+	const activeSkills = availableSkills().filter((s) => working.has(s.id));
+	const activeSnippets = snippets.filter((s) => working.has(s.id));
+	const prependBodies = activeSnippets.filter((s) => s.placement === "prepend").map((s) => s.body);
+	const appendBodies = activeSnippets.filter((s) => s.placement === "append").map((s) => s.body);
+
+	const sections: string[] = [];
+	if (activeKeywords.length > 0) sections.push(activeKeywords.join("\n"));
+	if (activeSkills.length > 0) {
+		sections.push(activeSkills.map((s) => `Read skill://${s.skill}/SKILL.md and follow it for this task.`).join("\n"));
+	}
+	sections.push(...prependBodies, text, ...appendBodies);
+
+	const fullText = sections.join("\n\n");
+	return activeExecution ? `${activeExecution.commandPrefix}${fullText}` : fullText;
+}
+
 export default function (pi: ExtensionAPI) {
 	let snippets: Snippet[] = [];
 	let enabled = new Set<string>();
@@ -557,6 +724,7 @@ export default function (pi: ExtensionAPI) {
 		const validIds = new Set([
 			...MAGIC_KEYWORDS.map((k) => k.id),
 			...EXECUTION_MODES.map((e) => e.id),
+			...SKILLS.map((s) => s.id),
 			...snippets.map((s) => s.id),
 		]);
 		enabled = new Set([...enabled].filter((id) => validIds.has(id)));
@@ -592,39 +760,8 @@ export default function (pi: ExtensionAPI) {
 		enabled = new Set();
 		updateWidget(ctx);
 
-		// 1. Resolve Magic Keywords
-		const activeKeywords = MAGIC_KEYWORDS.filter((k) => currentWorking.has(k.id)).map((k) => k.keyword);
-
-		// 2. Resolve Execution Mode (at most one)
-		const activeExecution = EXECUTION_MODES.find((e) => currentWorking.has(e.id));
-
-		// 3. Resolve Snippets
-		const activeSnippets = snippets.filter((s) => currentWorking.has(s.id));
-		const prependBodies = activeSnippets.filter((s) => s.placement === "prepend").map((s) => s.body);
-		const appendBodies = activeSnippets.filter((s) => s.placement === "append").map((s) => s.body);
-
-		// Build prompt payload
-		const promptSections: string[] = [];
-		if (activeKeywords.length > 0) {
-			promptSections.push(activeKeywords.join("\n"));
-		}
-		if (prependBodies.length > 0) {
-			promptSections.push(...prependBodies);
-		}
-		promptSections.push(event.text);
-		if (appendBodies.length > 0) {
-			promptSections.push(...appendBodies);
-		}
-
-		let fullText = promptSections.join("\n\n");
-
-		// If execution mode is armed, prefix the entire payload with its command prefix
-		if (activeExecution) {
-			fullText = `${activeExecution.commandPrefix}${fullText}`;
-		}
-
 		return {
-			text: fullText,
+			text: assemblePrompt(currentWorking, snippets, event.text),
 		};
 	});
 
