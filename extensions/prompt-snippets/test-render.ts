@@ -103,7 +103,7 @@ function runTests() {
 			if (w > width) throw new Error(`Line overflows at width ${width} (${w}): ${line.replace(/\x1b\[[0-9;]*m/g, "")}`);
 		}
 		const flat = lines.join(" ").replace(/\x1b\[[0-9;]*m/g, "").replace(/\s+/g, " ");
-		for (const needle of ["çıktısını alıntıla", "Yapıştırılan derin istem", "Üç satır", "iki uç viewport"]) {
+		for (const needle of ["En küçük çürütücü komutu koş", "Daha derin istem", "Üç satır", "iki viewport"]) {
 			if (!flat.includes(needle)) {
 				throw new Error(`Description text lost at width ${width}: "${needle}"`);
 			}
@@ -137,14 +137,14 @@ function runTests() {
 		theme: testTheme,
 		done: () => {},
 	});
-	narrowComponent.handleInput("5");
+	narrowComponent.handleInput("4");
 	narrowComponent.handleInput("\x1b[B");
 	const narrowFlat = narrowComponent
 		.render(60)
 		.join(" ")
 		.replace(/\x1b\[[0-9;]*m/g, "")
 		.replace(/\s+/g, " ");
-	if (!narrowFlat.includes("Check Real UI") || !narrowFlat.includes("viewport'ta dene")) {
+	if (!narrowFlat.includes("Check Real UI") || !narrowFlat.includes("iki viewport")) {
 		throw new Error("Narrow viewport hides the last item's wrapped description");
 	}
 	console.log("Narrow 60x24 viewport keeps the last wrapped item fully visible.");
@@ -176,15 +176,15 @@ function runTests() {
 	}
 	// Test quick jump keys (1: Keywords, 2: Exec, 3: Skills, 4: Prepend, 5: Append)
 	const installedSkills = availableSkills();
-	const skillStart = MAGIC_KEYWORDS.length + EXECUTION_MODES.length;
-	const prepStart = skillStart + installedSkills.length;
+	const prepStart = MAGIC_KEYWORDS.length + EXECUTION_MODES.length;
 	const appStart = prepStart + snippets.filter((s) => s.placement === "prepend").length;
+	const skillStart = appStart + snippets.filter((s) => s.placement === "append").length;
 	const jumps: [string, number][] = [
 		["1", 0],
 		["2", MAGIC_KEYWORDS.length],
-		...(installedSkills.length > 0 ? ([["3", skillStart]] as [string, number][]) : []),
-		["4", prepStart],
-		["5", appStart],
+		["3", prepStart],
+		["4", appStart],
+		...(installedSkills.length > 0 ? ([["5", skillStart]] as [string, number][]) : []),
 	];
 	for (const [key, expected] of jumps) {
 		component.handleInput(key);
@@ -194,8 +194,8 @@ function runTests() {
 	}
 	if (installedSkills.length === 0) {
 		component.handleInput("1");
-		component.handleInput("3");
-		if (component.cursor !== 0) throw new Error("Key '3' moved the cursor with no installed skills");
+		component.handleInput("5");
+		if (component.cursor !== 0) throw new Error("Key '5' moved the cursor with no installed skills");
 	}
 	console.log("Quick jump keys verified against installed skills.");
 

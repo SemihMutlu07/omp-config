@@ -5,7 +5,7 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 ## Usage
 
 - Press **alt+s** or run **/snippets** (or **/cockpit**) to open the cockpit menu.
-  - `↑`/`↓` or `1`-`5` navigate across sections (1: Keywords, 2: Loops, 3: Skills, 4: Prepend, 5: Append).
+  - `↑`/`↓` or `1`-`5` navigate across sections (1: Keywords, 2: Loops, 3: Prepend, 4: Append, 5: Skills).
   - `Space` toggles items (Execution Modes are mutually exclusive).
   - `c` clears all active selections immediately.
   - `Tab` previews item details, command syntax, or snippet markdown.
@@ -24,7 +24,15 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 - **Loop (Test --until)**: Automatically re-submits the prompt after each turn until a test command exits with code 0 (`/loop --until 'npm test'`).
 - **Loop (3x count)**: Automatically repeats prompt for 3 iterations (`/loop 3`).
 
-### 3. 🧩 Skills
+### 3. ↑ Prepend Modifiers
+- **Resume & Orient**: Three lines, each with a file path: last verified result, open task, next action.
+- **Better**: Focus on professional depth, raw inputs, tools, and verification.
+
+### 4. ↓ Append Modifiers
+- **Strict Verification**: Name the smallest disproof command, run it, quote the output.
+- **Check Real UI**: Exercise loading, empty, error, and interaction states at the two extreme viewports.
+
+### 5. 🧩 Skills
 - Curated launcher, not a full skill browser. Selecting one injects
   `Read skill://<name>/SKILL.md and follow it for this task.` before the prompt.
 - **ask-pocock**: routes to a loaded workflow; never installs a missing skill.
@@ -37,13 +45,6 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 - **gauntlet-loop**: spec → implement → independent review → runtime proof.
 - Skills are pointers, not copied prose: the skill file stays the single source.
 
-### 4. ↑ Prepend Modifiers
-- **Resume & Orient**: Three lines, each with a file path: last verified result, open task, next action.
-- **Better**: Focus on professional depth, raw inputs, tools, and verification.
-
-### 5. ↓ Append Modifiers
-- **Strict Verification**: Name the smallest disproof command, run it, quote the output.
-- **Check Real UI**: Exercise loading, empty, error, and interaction states at the two extreme viewports.
 
 `Ask Questions First` 2026-10-22'de kaldırıldı: gövdesi `AGENTS.md` L9
 ("Resolve routine, reversible choices yourself. Ask when missing information

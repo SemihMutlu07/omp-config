@@ -1,6 +1,6 @@
 ---
 name: Better
-description: Yapıştırılan derin istem. Seç. Tekrar yapıştırma
+description: Daha derin istem: ham girdi ve araç
 placement: prepend
 order: 40
 alias: better

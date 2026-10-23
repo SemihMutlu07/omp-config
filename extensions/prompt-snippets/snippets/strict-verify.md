@@ -1,6 +1,6 @@
 ---
 name: Strict Verification
-description: İddiayı çürütecek en küçük komutu koş, çıktısını alıntıla
+description: En küçük çürütücü komutu koş
 placement: append
 order: 10
 alias: sv

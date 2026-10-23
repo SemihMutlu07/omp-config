@@ -1,6 +1,6 @@
 ---
 name: Check Real UI
-description: Yükleme / boş / hata / etkileşim durumlarını iki uç viewport'ta dene
+description: Yükle/boş/hata × iki viewport
 placement: append
 order: 30
 alias: ui

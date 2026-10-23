@@ -59,7 +59,7 @@ export const MAGIC_KEYWORDS: MagicKeywordItem[] = [
 		id: "kw:orchestrate",
 		keyword: "orchestrate",
 		name: "orchestrate",
-		description: "Çoklu alt-ajan dağıtımı ve orkestrasyon sözleşmesi",
+		description: "Çoklu alt-ajan dağıtımı ve doğrulama",
 		detail: "OMP'nin yerleşik orchestrator sözleşmesini etkinleştirir. Görevleri alt-ajanlara böler, paralel dağıtır ve doğrular.",
 	},
 	{
@@ -67,7 +67,7 @@ export const MAGIC_KEYWORDS: MagicKeywordItem[] = [
 		id: "kw:workflowz",
 		keyword: "workflowz",
 		name: "workflowz",
-		description: "Rol haritası ve workpool tabanlı uzman ajan yönlendirmesi",
+		description: "workpool ile uzman ajan yönlendirme",
 		detail: "OMP'nin yerleşik workflowz motorunu devreye sokar. workpool('scout') ve reviewer gibi uzman rolleri kullanır.",
 	},
 	{
@@ -75,7 +75,7 @@ export const MAGIC_KEYWORDS: MagicKeywordItem[] = [
 		id: "kw:ultrathink",
 		keyword: "ultrathink",
 		name: "ultrathink",
-		description: "Maksimum akıl yürütme (thinking) bütçesi",
+		description: "Maksimum akıl yürütme bütçesi",
 		detail: "Modele izin verilen en derin akıl yürütme (reasoning/thinking) kotasını atar.",
 	},
 	{
@@ -83,7 +83,7 @@ export const MAGIC_KEYWORDS: MagicKeywordItem[] = [
 		id: "kw:jevify",
 		keyword: "jevify",
 		name: "jevify",
-		description: "judge_batch ile eval ortamında toplu sınıflandırma",
+		description: "judge_batch ile toplu sınıflandırma",
 		detail: "Dondurulmuş rubrik ile eval kernelinde toplu verileri (diff, dosya, log) paralel sınıflandırır.",
 	},
 ];
@@ -92,18 +92,18 @@ export const EXECUTION_MODES: ExecutionModeItem[] = [
 	{
 		type: "execution",
 		id: "exec:loop_test",
-		name: "Loop: Test geçene kadar (--until)",
+		name: "Loop: test geçene kadar",
 		badge: "Loop: until test",
-		description: "Komut 0 dönene kadar istemi yineler (/loop --until 'npm test')",
+		description: "Test geçene kadar yineler",
 		commandPrefix: "/loop --until 'npm test' ",
 		detail: "Her yanıtın ardından arka planda test komutunu çalıştırır. Test başarılı olunca (exit 0) döngüyü durdurur. TDD için idealdir.",
 	},
 	{
 		type: "execution",
 		id: "exec:loop_3x",
-		name: "Loop: 3 iterasyon tekrarla",
+		name: "Loop: 3 tur",
 		badge: "Loop: 3x",
-		description: "İstemi 3 tur boyunca otomatik yineler (/loop 3)",
+		description: "İstemi 3 tur otomatik yineler",
 		commandPrefix: "/loop 3 ",
 		detail: "İstemi 3 kez peş peşe çalıştırır. Adım adım refactoring veya iteratif iyileştirme işlemlerinde kullanılır.",
 	},
@@ -124,7 +124,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:ask-pocock",
 		skill: "ask-pocock",
 		name: "ask-pocock",
-		description: "Hangi yüklü iş akışı uygun? Yönlendirici",
+		description: "Uygun yüklü iş akışını seç",
 		detail: "Yüklü beceri listesine bakar, göreve uyan workflow'u seçer. Eksik beceriyi kurmaz veya varsaymaz.",
 	},
 	{
@@ -132,7 +132,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:ask-matt",
 		skill: "ask-matt",
 		name: "ask-matt",
-		description: "Fikir → spec → ticket → implement yaşam döngüsü",
+		description: "Fikir → spec → ticket → implement",
 		detail: "Yazılım işini ana akışa bağlar: grill, spec, ticket, implement, review. Tek oturumluk işte doğrudan implement.",
 	},
 	{
@@ -140,7 +140,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:grill-for-unknowns",
 		skill: "grill-for-unknowns",
 		name: "grill-for-unknowns",
-		description: "Planı dokümanlara karşı sorgula, bilinmeyenleri çıkar",
+		description: "Planı dokümanlara karşı sorgula",
 		detail: "Uygulamadan önce varsayımları tek tek sınar; yanıtı doküman veya kodda olan soruyu sana sormaz.",
 	},
 	{
@@ -148,7 +148,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:clarity",
 		skill: "clarity",
 		name: "clarity",
-		description: "Sade, format dayatmayan açıklama",
+		description: "Sade açıklama, format dayatmaz",
 		detail: "Bir konuyu jargon ve şablon olmadan açıklar. Açıklama istendiğinde kullanılır.",
 	},
 	{
@@ -156,7 +156,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:prototype",
 		skill: "prototype",
 		name: "prototype",
-		description: "Tek tasarım sorusunu çalışan kodla yanıtla",
+		description: "Tek tasarım sorusunu kodla yanıtla",
 		detail: "UI veya durum modeli kâğıtta çözülmüyorsa küçük, atılabilir bir programla karar verir.",
 	},
 	{
@@ -164,7 +164,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:research",
 		skill: "research",
 		name: "research",
-		description: "Birincil kaynaklardan atıflı Markdown",
+		description: "Birincil kaynaklardan atıflı not",
 		detail: "Okuma işini arka plan ajanına verir; sonucu kaynak atıflı bir dosya olarak bırakır.",
 	},
 	{
@@ -172,7 +172,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:code-review",
 		skill: "code-review",
 		name: "code-review",
-		description: "Branch/PR diff'ini iki eksende incele",
+		description: "Diff'i iki eksende incele",
 		detail: "Standartlar ve spec ekseninde bağımsız inceleme yapar; kriteri gevşetmeden PASS/FAIL verir.",
 	},
 	{
@@ -180,7 +180,7 @@ export const SKILLS: SkillItem[] = [
 		id: "skill:gauntlet-loop",
 		skill: "gauntlet-loop",
 		name: "gauntlet-loop",
-		description: "Spec → uygula → bağımsız review → runtime",
+		description: "Spec → uygula → review → runtime",
 		detail: "Kod değişikliğinde sabit kabul kriteri, bağımsız reviewer ve gerçek yüzey doğrulamasıyla ilerler.",
 	},
 ];
@@ -323,9 +323,9 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 	const items: CockpitItem[] = [
 		...MAGIC_KEYWORDS.map((k) => ({ kind: "keyword" as const, data: k })),
 		...EXECUTION_MODES.map((e) => ({ kind: "execution" as const, data: e })),
-		...skills.map((s) => ({ kind: "skill" as const, data: s })),
 		...prepends.map((s) => ({ kind: "snippet" as const, data: s })),
 		...appends.map((s) => ({ kind: "snippet" as const, data: s })),
+		...skills.map((s) => ({ kind: "skill" as const, data: s })),
 	];
 
 	const working = new Set(initialEnabled);
@@ -369,32 +369,22 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 			for (const text of itemRows(item, idx, width)) rows.push({ text, itemIndex: idx });
 		};
 
-		// 1. Magic Keywords Section
+		// 1. Magic Keywords
 		rows.push({
 			text: sectionHeader("⚡ Magic Keywords", "accent", MAGIC_KEYWORDS.map((k) => k.id), width),
 			itemIndex: null,
 		});
 		for (const kw of MAGIC_KEYWORDS) pushItem({ kind: "keyword", data: kw });
 
-		// 2. Execution Modes Section
-		rows.push({ text: "", itemIndex: null });
+		// 2. Execution Modes
 		rows.push({
 			text: sectionHeader("🎯 Execution Modes", "warning", EXECUTION_MODES.map((e) => e.id), width),
 			itemIndex: null,
 		});
 		for (const ex of EXECUTION_MODES) pushItem({ kind: "execution", data: ex });
 
-		// 3. Skills Section
-		rows.push({ text: "", itemIndex: null });
-		rows.push({
-			text: sectionHeader("🧩 Skills", "accent", skills.map((s) => s.id), width),
-			itemIndex: null,
-		});
-		for (const s of skills) pushItem({ kind: "skill", data: s });
-
-		// 4. Prepend Snippets Section
+		// 3. Prepend snippets stay above Append and Skills: they are the most used.
 		if (prepends.length > 0) {
-			rows.push({ text: "", itemIndex: null });
 			rows.push({
 				text: sectionHeader("↑ Prepend Modifiers", "accent", prepends.map((s) => s.id), width),
 				itemIndex: null,
@@ -402,14 +392,22 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 			for (const s of prepends) pushItem({ kind: "snippet", data: s });
 		}
 
-		// 5. Append Snippets Section
+		// 4. Append snippets
 		if (appends.length > 0) {
-			rows.push({ text: "", itemIndex: null });
 			rows.push({
 				text: sectionHeader("↓ Append Modifiers", "warning", appends.map((s) => s.id), width),
 				itemIndex: null,
 			});
 			for (const s of appends) pushItem({ kind: "snippet", data: s });
+		}
+
+		// 5. Skills last: a long optional list must not push snippets off screen.
+		if (skills.length > 0) {
+			rows.push({
+				text: sectionHeader("🧩 Skills", "accent", skills.map((s) => s.id), width),
+				itemIndex: null,
+			});
+			for (const s of skills) pushItem({ kind: "skill", data: s });
 		}
 
 		return rows;
@@ -499,25 +497,40 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 
 		const above = s;
 		const below = lines.length - (s + view);
-		return {
-			out: [
-				above > 0 ? theme.fg("dim", `  ↑ ${above} daha fazla`) : "",
-				...visible,
-				below > 0 ? theme.fg("dim", `  ↓ ${below} daha fazla`) : "",
-			],
-			scroll: s,
-		};
+		const out = [...visible];
+		if (above > 0) out.unshift(theme.fg("dim", `  ↑ ${above} daha fazla`));
+		if (below > 0) out.push(theme.fg("dim", `  ↓ ${below} daha fazla`));
+		return { out, scroll: s };
 	};
 
 	return {
 		render(width: number): string[] {
-			const termRows = tui.terminal?.rows ?? 24;
-			const maxView = Math.max(5, termRows - 8);
+			const activeCount = working.size;
+			const stateText =
+				activeCount === 0
+					? "Hiçbiri seçili değil. Bu bir todo listesi değil: seçim yalnız bir sonraki mesaja eklenir."
+					: `${activeCount} seçim bir sonraki mesaja eklenecek; gönderimden sonra sıfırlanır.`;
+			const currentItem = items[cursor];
+			const title =
+				mode === "list"
+					? activeCount > 0
+						? `Prompt Cockpit · ${activeCount} seçili`
+						: "Prompt Cockpit"
+					: `Detay · ${currentItem.data.name}${working.has(currentItem.data.id) ? " · seçili" : ""}`;
+			const hints =
+				mode === "list"
+					? "↑↓ gez · 1-5 · Space seç · c temizle · Tab detay · Enter uygula · Esc"
+					: "↑↓ kaydır · Space seç · Tab/Esc geri · Enter uygula";
+
+			// Footer height depends on width, so measure it before sizing the viewport.
+			const footerLines = [hints, stateText].flatMap((text) =>
+				wrapTextWithAnsi(theme.fg("dim", text), Math.max(10, width - 2)).map((line) =>
+					truncateToWidth(` ${line}`, width),
+				),
+			);
+			const maxView = Math.max(5, (tui.terminal?.rows ?? 24) - 3 - footerLines.length);
 
 			let content: string[];
-			let title: string;
-			let hints: string;
-
 			if (mode === "list") {
 				const rows = buildListRows(width);
 				const cursorRows = rows.flatMap((r, i) => (r.itemIndex === cursor ? [i] : []));
@@ -530,56 +543,31 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 				);
 				content = v.out;
 				listScroll = v.scroll;
-				const activeCount = working.size;
-				title = activeCount > 0 ? `Prompt Cockpit · ${activeCount} seçili` : "Prompt Cockpit";
-				hints = "↑↓ gez · 1-5 bölüm · Space seç · c temizle · Tab detay · Enter uygula · Esc çık";
 			} else {
-				const item = items[cursor];
-				const rows = buildPreviewRows(item, width);
-				const v = viewport(rows, previewScroll, maxView);
+				const v = viewport(buildPreviewRows(currentItem, width), previewScroll, maxView);
 				content = v.out;
 				previewScroll = v.scroll;
-				const isToggled = working.has(item.data.id);
-				title = `Detay · ${item.data.name}${isToggled ? " · seçili" : ""}`;
-				hints = "↑↓ kaydır · Space seç · Tab/Esc geri · Enter uygula";
 			}
-
-			const activeCount = working.size;
-			const stateText =
-				activeCount === 0
-					? "Hiçbiri seçili değil. Bu bir todo listesi değil: seçim yalnız bir sonraki mesaja eklenir."
-					: `${activeCount} seçim bir sonraki mesaja eklenecek; gönderimden sonra sıfırlanır.`;
 
 			const titleText = ` ${title} `;
 			const titleLen = visibleWidth(titleText);
-			const lineBefore = "──";
 			const remainingDashes = Math.max(0, width - 2 - titleLen);
 			const headerLine = truncateToWidth(
-				theme.fg("accent", lineBefore) + theme.bold(titleText) + theme.fg("accent", "─".repeat(remainingDashes)),
+				theme.fg("accent", "──") + theme.bold(titleText) + theme.fg("accent", "─".repeat(remainingDashes)),
 				width,
 			);
 			const footerDivider = theme.fg("accent", "─".repeat(width));
-			const footerLines = [hints, stateText].flatMap((text) =>
-				wrapTextWithAnsi(theme.fg("dim", text), Math.max(10, width - 2)).map((line) =>
-					truncateToWidth(` ${line}`, width),
-				),
-			);
 
-			return [
-				headerLine,
-				...content,
-				footerDivider,
-				...footerLines,
-			];
+			return [headerLine, ...content, footerDivider, ...footerLines];
 		},
 		invalidate() {},
 		handleInput(data: string) {
 			if (mode === "list") {
 				const kwStart = 0;
 				const execStart = MAGIC_KEYWORDS.length;
-				const skillStart = execStart + EXECUTION_MODES.length;
-				const prepStart = skillStart + skills.length;
+				const prepStart = execStart + EXECUTION_MODES.length;
 				const appStart = prepStart + prepends.length;
+				const skillStart = appStart + appends.length;
 
 				if (data === "c" || data === "C") {
 					working.clear();
@@ -593,16 +581,16 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 					cursor = execStart;
 					tui.requestRender();
 					return;
-				} else if (data === "3" && skills.length > 0) {
-					cursor = skillStart;
-					tui.requestRender();
-					return;
-				} else if (data === "4" && prepends.length > 0) {
+				} else if (data === "3" && prepends.length > 0) {
 					cursor = prepStart;
 					tui.requestRender();
 					return;
-				} else if (data === "5" && appends.length > 0) {
+				} else if (data === "4" && appends.length > 0) {
 					cursor = appStart;
+					tui.requestRender();
+					return;
+				} else if (data === "5" && skills.length > 0) {
+					cursor = skillStart;
 					tui.requestRender();
 					return;
 				}

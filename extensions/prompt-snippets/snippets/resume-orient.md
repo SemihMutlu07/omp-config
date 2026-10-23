@@ -1,6 +1,6 @@
 ---
 name: Resume & Orient
-description: Üç satır, her satırda dosya yolu: sonuç / açık iş / sıradaki adım
+description: Üç satır: sonuç / açık iş / sıradaki
 placement: prepend
 order: 20
 alias: resume
