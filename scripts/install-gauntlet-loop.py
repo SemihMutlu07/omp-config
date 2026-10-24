@@ -42,9 +42,11 @@ def install(repo, home, check=False):
         raise ValueError(f"Missing canonical skill: {source}")
     installed = home / ".agents/skills/gauntlet-loop"
     plugin = home / ".codex/plugins/gauntlet-loop"
-    for destination in (installed, plugin):
-        if destination.is_symlink() or (destination.exists() and not destination.is_dir()):
-            raise ValueError(f"Expected a real installation directory: {destination}")
+    # The shared store may link back to this repo; writes then land on the single source copy.
+    if installed.is_symlink() and installed.resolve() != source.resolve():
+        raise ValueError(f"{installed} points outside the repo: {installed.resolve()}")
+    if plugin.is_symlink() or (plugin.exists() and not plugin.is_dir()):
+        raise ValueError(f"Expected a real installation directory: {plugin}")
     catalog_path = home / ".agents/plugins/marketplace.json"
     catalog = json.loads(catalog_path.read_text()) if catalog_path.exists() else {
         "name": "semih-local", "interface": {"displayName": "Semih Local"}, "plugins": []}
@@ -117,8 +119,9 @@ def install(repo, home, check=False):
     put(catalog_path, json.dumps(catalog, ensure_ascii=False, indent=2) + "\n")
 
     # Retire only the known old alias; the real source remains in the repository.
+    # A symlinked harness root already points at the shared store, so its entry is the store.
     alias = home / ".cursor/skills/gauntlet-loop"
-    if alias.is_symlink() and alias.resolve() == source.resolve():
+    if alias.is_symlink() and alias.resolve() == source.resolve() and not (home / ".cursor/skills").is_symlink():
         if check:
             mismatches.append(str(alias) + " (duplicate old alias)")
         else:

@@ -12,7 +12,7 @@ Bu depo, **OMP (oh-my-pi)** geliştirici ortamı, model rolleri, retry zincirler
 |---|---|---|
 | **Konfigürasyon (`config.yml`, `settings.json`)** | Bu Git reposu + Sembolik Link | **Evet** |
 | **Kurallar (`AGENTS.md`)** | Bu Git reposu + Sembolik Link | **Evet** |
-| **Yetenekler (`skills/*`)** | `~/.pi/agent/skills/` | **Evet** |
+| **Yetenekler (`skills/*`)** | Paylaşılan depo `~/.agents/skills/`; bu repo yalnız OMP'ye özel skill'lerin kaynağı | **Evet** |
 | **Eklentiler (`extensions/*`)** | `~/.omp/agent/extensions/` | **Evet** |
 | **Model Kimlik Bilgileri (`auth.json`, Token'lar)** | Host-yerel (`omp login` / env) | ❌ **ASLA (Gitignore)** |
 | **SQLite Veritabanları (`*.db`, `*.db-wal`)** | Host-yerel çalışma kayıtları | ❌ **ASLA (Gitignore)** |
@@ -171,29 +171,21 @@ omp-config/
 │   ├── herdr-omp-agent-state.ts # Herdr orkestrasyon entegrasyonu
 │   ├── bash-guard/         # Bash komut güvenlik filtresi
 │   └── prompt-snippets/    # Hızlı komut ve snippet kütüphanesi
-└── skills/                 # Pi & OMP özel yetenekleri (ortak yüklenen küme: 25)
-    ├── analyze-sessions/
+└── skills/                 # Yalnız OMP'ye özel skill kaynakları; paylaşılan depo bunlara link verir
+    ├── ask-pocock/
     ├── brainstorm-yanci/
-    ├── brutal-product-strategist/
     ├── clarity/
+    ├── cloudflare-whats-new/
     ├── delegate-wave/
-    ├── diagnose-crash/
-    ├── find-skills/
     ├── gauntlet-loop/
     ├── graphify/
-    ├── grill-me/
-    ├── grilling/
     ├── herdr/
     ├── humanizer/
     ├── napiyorduk/
-    ├── omarchy/
-    ├── pdf-reader/
+    ├── pele-tern-diagrams/
     ├── ste100/
-    ├── transitions-dev/
-    ├── wayfinder/
-    ├── web-debug/
-    ├── workers-best-practices/
-    └── youtube-transcript/
+    ├── steve/
+    └── tern/
 ```
 
 ---
@@ -211,6 +203,7 @@ omp-config/
    ```bash
    cd ~/dev/omp-config
    git pull
+   python3 scripts/sync-skills.py     # depo skill'lerini paylaşılan depoya bağlar, Codex/OpenCode'u eşitler
    ```
    Sembolik linkler kurulu olduğu için OMP hiçbir dosya kopyalama gerektirmeden güncel konfigürasyonu kullanır.
 
@@ -225,11 +218,15 @@ Do not create `~/AGENTS.md`.
 The setup script removes that path only when it links to this checkout's rule file.
 The setup script preserves unrelated files and links at that path.
 
-Skill discovery uses only `~/.pi/agent/skills` through `skills.customDirectories`.
-The configuration disables implicit user and project skill roots.
-Existing links beneath the selected root can point to existing skill sources.
-The two machines currently share 25 skill names.
-Laptop-only skills remain outside the loaded set.
+## Skill discovery contract
+
+Skill content lives once in `~/.agents/skills`.
+`~/.omp/agent/skills`, `~/.claude/skills` and `~/.cursor/skills` are links to that store.
+OMP reads it through `skills.enableAgentsUser: true`; `skills.customDirectories` stays empty.
+A skill in this checkout is linked into the store, so one copy serves every harness.
+Codex keeps its own `.system` skills inside `~/.codex/skills`, and OpenCode lists skill paths in `~/.config/opencode/opencode.json`.
+`scripts/sync-skills.py` links checkout skills into the store and mirrors the store into those two places.
+Run `scripts/sync-skills.py --check` after a skill change; it exits non-zero on drift.
 The router selects only names from the current loaded list.
 If no loaded workflow fits, the agent uses the engineering rules directly.
 

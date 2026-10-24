@@ -147,8 +147,24 @@ install_file "$SCRIPT_DIR/AGENTS.md" "$OMP_DIR/AGENTS.md"
 install_file "$SCRIPT_DIR/APPEND_SYSTEM.md" "$OMP_DIR/APPEND_SYSTEM.md"
 
 # 4. Skills ve Extensions bağla
-print_step "Skills yerleştiriliyor (~/.omp/agent/skills)..."
-install_dir_contents "$SCRIPT_DIR/skills" "$SKILLS_DIR"
+print_step "Skills yerleştiriliyor (~/.agents/skills)..."
+# Tek depo: içerik ~/.agents/skills'te durur; her harness kökü oraya bağlanır.
+mkdir -p "$HOME_DIR/.agents/skills"
+for root in "$SKILLS_DIR" "$HOME_DIR/.claude/skills" "$HOME_DIR/.cursor/skills"; do
+  if [ -L "$root" ]; then
+    ln -sfn "$HOME_DIR/.agents/skills" "$root"
+  elif [ -d "$root" ]; then
+    print_warn "$root gerçek dizin; paylaşılan depoya taşınmadı (elle birleştir)."
+  else
+    mkdir -p "$(dirname "$root")"
+    ln -s "$HOME_DIR/.agents/skills" "$root"
+  fi
+done
+if command -v python3 >/dev/null 2>&1; then
+  python3 "$SCRIPT_DIR/scripts/sync-skills.py" --home "$HOME_DIR" --repo "$SCRIPT_DIR"
+else
+  print_warn "python3 yok; Codex ve OpenCode skill listeleri eşitlenmedi."
+fi
 
 print_step "Extensions yerleştiriliyor..."
 install_dir_contents "$SCRIPT_DIR/extensions" "$OMP_EXT_DIR"

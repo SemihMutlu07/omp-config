@@ -5,7 +5,7 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 ## Usage
 
 - Press **alt+s** or run **/snippets** (or **/cockpit**) to open the cockpit menu.
-  - `↑`/`↓` or `1`-`5` navigate across sections (1: Keywords, 2: Loops, 3: Prepend, 4: Append, 5: Skills).
+  - `↑`/`↓` or `1`-`6` navigate across sections (1: Keywords, 2: Loops, 3: Prepend, 4: Append, 5: Stacks, 6: Skills).
   - `Space` toggles items (Execution Modes are mutually exclusive).
   - `c` clears all active selections immediately.
   - `Tab` previews item details, command syntax, or snippet markdown.
@@ -27,12 +27,24 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 ### 3. ↑ Prepend Modifiers
 - **Resume & Orient**: Three lines, each with a file path: last verified result, open task, next action.
 - **Better**: Focus on professional depth, raw inputs, tools, and verification.
+- **Steve Lens**: Subtraction lens; attention budget, delete test, prototype before debate. Deep reference: `~/.omp/agent/skills/steve/SKILL.md`.
 
 ### 4. ↓ Append Modifiers
 - **Strict Verification**: Name the smallest disproof command, run it, quote the output.
 - **Check Real UI**: Exercise loading, empty, error, and interaction states at the two extreme viewports.
 
-### 5. 🧩 Skills
+### 5. 🧩 Stacks
+- A stack is a named combo: one press expands into one read directive per member.
+  Same output as ticking each member, one key instead of three.
+- A stack appears only when **every** member exists on disk. There is no partial stack.
+- A member selected twice (stack + its own row) is read once.
+- **Keşif**: `grill-for-unknowns` + `research` — interrogate the plan, then collect cited sources.
+- **Uygula**: `gauntlet-loop` + `code-review` — default code change.
+- **Hata**: `diagnosing-bugs` + `tdd` — reproduce, then lock the fix with a test.
+- **UI**: `prototype` + `frontend-design` + `review-animations` — design question to motion review.
+- **Bakım**: `context-audit` + `writing-great-skills` + `skill-creator` — audit the context, then fix and measure it.
+
+### 6. 🧩 Skills
 - Curated launcher, not a full skill browser. Selecting one injects
   `Read skill://<name>/SKILL.md and follow it for this task.` before the prompt.
 - **ask-pocock**: routes to a loaded workflow; never installs a missing skill.
@@ -43,6 +55,8 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 - **research**: cited Markdown from primary sources.
 - **code-review**: two-axis review of a diff.
 - **gauntlet-loop**: spec → implement → independent review → runtime proof.
+- **constraint-driven**: writes `CONSTRAINTS.md` and catches a weakened quality bar in the diff.
+- **agent-interface**: designs CLIs and tool schemas an agent cannot misuse.
 - Skills are pointers, not copied prose: the skill file stays the single source.
 
 
@@ -59,15 +73,18 @@ cümleler çıktı, yalnız kanıtlanmış delta kaldı (ör. `strict-verify` ar
 
 ### Snippet maliyeti (2026-10-22, gövde karakteri — frontmatter hariç)
 
-Snippet yalnız cockpit'te seçildiğinde prompt'a girer; dördü birlikte seçilirse
-istek başına **+730 karakter**. Kırpma öncesi 1.079'du (ask-first 158 dahil).
+Snippet yalnız cockpit'te seçildiğinde prompt'a girer; beşi birlikte seçilirse
+istek başına **+2.298 karakter** (2026-10-24'te yeniden ölçüldü; `strict-verify`
+regresyon kanıtı cümlesiyle 86 → 169). Kırpma öncesi (Steve Lens hariç) 1.079'du
+(ask-first 158 dahil).
 
 | Snippet | Yerleşim | Sıra | Gövde karakter | Tek davranış | A/B (açık / kapalı, 6 örnek) |
 |---|---|---|---|---|---|
-| Strict Verification | append | 10 | 86 | En küçük çürütücü komutu koş, çıktısını alıntıla | somut komut adı: 0/6 → 6/6 |
+| Strict Verification | append | 10 | 169 | En küçük çürütücü komutu koş, çıktısını alıntıla; hata düzeltmesinde önce kırmızıyı göster | somut komut adı: 0/6 → 6/6; kırmızı→yeşil cümlesi ölçülmedi |
 | Resume & Orient | prepend | 20 | 91 | Üç satır, her satırda dosya yolu | satır başı etiket: 0/6 → 5/6 |
 | Check Real UI | append | 30 | 119 | Yükleme/boş/hata/etkileşim × iki uç viewport | durum matrisi (yükle/boş/hata): 1/6 → 6/6 |
 | Better | prepend | 40 | 434 | Derin istem: ham girdi, araç, doğrulama | ölçülmedi — AGENTS.md'de karşılığı yok |
+| Steve Lens | prepend | 50 | 1.485 | Çıkarma: dikkat bütçesi, silme testi, önce prototip | ölçülmedi — yeni; içerik değerlendirmesi bekliyor |
 
 Kanıt: `~/dev/analysis/2026-10-22/t6-ab/raw-{notools,after}.json` ve
 `02-cockpit.txt` / `13-badge-strict.txt`. Ölçüm `deepseek/deepseek-flash` ile,

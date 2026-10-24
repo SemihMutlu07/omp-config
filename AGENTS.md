@@ -15,25 +15,39 @@
 
 - Read the instructions and sources relevant to the task. Inspect Git state before editing a repository; preserve unrelated changes and untracked files.
 - Make the smallest complete, reversible change using existing conventions. Avoid speculative dependencies, abstractions, and infrastructure.
+- Put deterministic decisions in tested commands and policy files, not in prompts or agent memory. If a command answers the question, use it; do not re-interpret the operation.
+- Turn a repeated mechanical procedure into tested code when practical. Keep observed facts separate from agent inference; a proposed classification is not an observed fact.
 - Run checks appropriate to the change. Add or update tests when they meaningfully verify behavior; avoid tests that merely mirror implementation. Use comments when they explain non-obvious intent.
 - Verify the layer involved in the request. A mock, passing test, generated file, or agent completion message does not prove that the real application works.
 - A checkbox, an audit note, or an agent sentence is not completion. Completion is a command result and a file the user can open.
-- Label every claim as measured, derived, or unverified. A heuristic scan, a sample match, or a model assertion is not a measurement; a number you did not read from a command is a guess.
+- Back a claim with the command output or file that shows it. When no check ran, say "unverified" once and name the missing command; do not tag every sentence.
 - A configuration key, permission rule, or hook counts only when a probe shows its effect. A file that is referenced but not loaded by the harness is not an instruction, and a rule that is written but never exercised is not enforcement.
 - Usage, quota, and timer readings are snapshots. Record the timestamp and the absolute reset; one reading is not persistent truth.
 - Separate symptom, supported hypothesis, and verified root cause. If the acceptance check did not run, hand off PARTIAL or BLOCKED with the exact command that is missing.
-- If Kasa or a file can answer, read it. Do not ask Semih to restate it. Name the missing path instead.
+- If a project record or a file can answer, read it. Do not ask the user to restate it. Name the missing path instead.
 - When runtime identity matters, confirm that the running process uses the intended checkout and configuration.
 - Report what changed, why, the actual verification, and remaining uncertainty. Point to the few files or code sections that help the user inspect the result.
+
+## Candidate improvement
+
+- Treat an agent-proposed skill, memory entry, rule, or automation as a candidate, not as trusted behavior.
+- Compare it with current behavior, run the relevant tests, and inspect side effects before use.
+- Promote it to a permanent or shared rule only with user approval. An agent's own evaluation is not proof of success.
 
 ## Authority and shared work
 
 - Protect secrets and preserve user data. Back up configuration before substantial rewrites and record the backup path. Avoid broad destructive commands.
 - Never clean a dirty worktree with automatic stash, reset, checkout, or pull. Inspect the change, name its likely owner, and leave it in place.
 - Publication, deployment, external messages, purchases, destructive operations, and Git commits or pushes require user authorization. An explicit request can provide that authorization; prepare a concrete result before asking for missing approval.
+- Verified work is not a failure when commit authorization is absent. Report it as `verified, awaiting authorized commit`. Never treat completion as a reason to commit.
 - Do not interrupt or restart unrelated sessions. Avoid simultaneous edits to the same files or worktree.
 - Do not change models, provider routing, credentials, or paid usage settings unless the task authorizes it. Verify current capabilities instead of assuming a tool, model, or connector exists.
 - Delegate only when the user or an applicable instruction requests it. Give each child a bounded task and clear file ownership; inspect its evidence before relying on the result.
+
+## Privacy and scope
+
+- Private notes, raw sessions, credentials, and sensitive derived data do not leave local storage without broad explicit permission.
+- Global rules do not grant permission to open a project vault in every project or to take work from it. Project rules do not become global rules.
 
 ## Automation and hosts
 
@@ -51,14 +65,14 @@
 - Treat memory and old sessions as context. Verify operational claims against current sources. Do not silently turn proposals into accepted decisions or save every conversation.
 - On handoff, preserve the objective, last verified result, evidence, remaining work, and next action. Keep code and raw logs in their original sources.
 
-## Workflow Routing: ask-pocock vs. ask-matt
+## Skill workflow routing
 
-### Availability Boundary
-- Use only skills loaded in the active session. A reference inside another skill (including nested steps in `ask-matt`) does not establish availability. Verify availability before following any route or nested reference; do not select an absent skill from memory or claim an unavailable workflow ran.
-- Do not select a workflow for a trivial reply.
+Use only skills loaded in the current session. A reference inside another skill does not establish availability. Verify availability before following any route or nested reference; do not select an absent skill from memory or claim an unavailable workflow ran. Do not select a workflow for a trivial reply.
 
-### 1. `ask-pocock` — Loaded Workflow Gateway
+### `ask-pocock` — loaded workflow gateway
+
 Use at task start to route among loaded workflows when a specialized workflow is needed:
+
 - Unresolved assumptions in a complex plan -> `grill-for-unknowns`
 - Requested plan interview -> `grill-me`
 - Large foggy effort with unresolved architecture -> `wayfinder`
@@ -69,14 +83,17 @@ Use at task start to route among loaded workflows when a specialized workflow is
 - Pele Mermaid diagram rendering or preview in Tern -> `pele-tern-diagrams`
 - *Fallback:* If no loaded workflow fits, use engineering rules directly (read code, smallest change, verify behavior).
 
-### 2. `ask-matt` — Software Engineering Lifecycle (Idea -> Ship)
+### `ask-matt` — software engineering lifecycle
+
 Use when developing a concrete feature, bugfix, or codebase upkeep in a repository:
+
 - *Main flow:* `grill-with-docs` (sharpen idea against codebase) -> detour through `prototype` via `handoff` only if a question needs a runnable UI/state answer -> `to-spec` -> `to-tickets` -> `implement` (drives test-first `tdd` and `code-review`). For a single-session build, `implement` directly after grilling.
 - *On-ramps:* Raw incoming bugs/requests -> `triage`; hard or flaky bugs with tight feedback loops -> `diagnosing-bugs`.
 - *Upkeep:* `improve-codebase-architecture`, `domain-modeling`, `codebase-design`.
-- Invoke these by skill name through the harness's skill tool, or by reading the skill's `SKILL.md`. Slash-command aliases exist only where the active harness defines them.
+- Invoke these by skill name through the active skill tool, or by reading the skill's `SKILL.md`. Slash-command aliases exist only where the active harness defines them.
 
-### Shared Skills Boundaries
+### Shared skill boundaries
+
 - `grill-me` vs `grill-with-docs`: Use `grill-me` when there is no codebase or for a stateless plan interview; use `grill-with-docs` when working against a codebase (saves `CONTEXT.md` and ADRs).
 - `wayfinder`: Charts a shared map of decision tickets for large, foggy efforts too big for one session. Produces decisions, not deliverables; each ticket resolves a decision until the route to the destination (spec, decision, or change) is clear. Hand off when clear.
 
@@ -103,30 +120,24 @@ Use when developing a concrete feature, bugfix, or codebase upkeep in a reposito
 
 ## Spec-driven work and shared execution
 
-- A short request is enough. Recover the relevant unfinished work from Kasa (kasa-vault at /home/semihmutlu/Kasa); do not ask Semih to repeat available context.
-- Kasa is the primary factory and source of truth for decisions, knowledge, and local work. Notion serves as an external ticket/reading surface for mobile and external bots. Code, raw sessions, credentials, and detailed evidence stay local.
-- Before substantial execution, put a compact spec in the existing task: outcome, sources, scope in/out, acceptance check, owner/session, dependencies, last verified evidence, and next action. Distinguish user decisions from proposals and historical claims.
-- Execute authorized, reversible steps without another confirmation. Continue through verification and corrections, then select the next authorized, unowned task whose dependencies are satisfied. Do not activate abandoned work, unapproved ideas, or another owner's live task.
+- A short request is enough. Recover available context from local project records before asking the user to repeat it.
+- Before substantial execution, state a compact spec: outcome, sources, scope in/out, acceptance check, owner/session, dependencies, last verified evidence, and next action. Distinguish user decisions from proposals and historical claims.
+- Execute authorized, reversible steps without another confirmation. Continue through verification and corrections. Do not activate abandoned work, unapproved ideas, or another owner's live task.
 - Keep one writer per task and worktree. Re-read the task before claiming it or writing a checkpoint. A stale owner is not permission to overwrite current work.
-- Every checkpoint records the actual result, evidence location, blocker, and next action in the same task. Fetch it again to verify persistence. Never mark done from a worker's claim, a passing mock, or instruction changes alone.
-- New sessions read the shared guide, relevant task spec, and latest handoff before acting. Use the standardized OM-06 Handover Receipt (outcome, source, constraints, check, last verified evidence, next action) in the Kasa task file; resume directly with 0 restatement requested from the user. Missing access is an explicit blocker; preserve the pending update locally without creating a competing backlog.
+- Every checkpoint records the actual result, evidence location, blocker, and next action. Verify persistence. Never mark done from a worker's claim, a passing mock, or an instruction change alone.
+- New sessions read the applicable project contract and latest handoff before acting. Missing access is an explicit blocker; preserve the pending update locally without creating a competing backlog.
 - For orchestration, verify each session's actual model before relying on it. Role and model routing belongs to the active harness's configuration, not to this file. Never run two writers on one path. No paid fallback or saved quota reset without authorization.
 - Automation means this verified execution loop while an authorized session is running. Do not claim unattended scheduling, automatic wake-up, or integration with an untested client.
 
-## Conductor board
-
-- Start a substantial session by reading `~/Kasa/_vault/orkestra.md`. Continue the row this session owns; otherwise take the top unowned row, write yourself as owner, and act. Do not ask which task it is.
-- One conductor per board. The conductor is the only writer of the board and verifies worker claims with its own command.
-- A worker gets one ticket and one file path. Do not give it the conductor's transcript, and do not run two writers on one path.
-- Close with the OM-06 receipt from `_vault/orkestra-dogrulama-template.md`. A row is done only from command output plus a commit.
-
 ## Harness split
 
-- This file is the shared contract for every harness (OMP, OpenCode, or another client). It must stay harness-neutral: no tool names, slash commands, model IDs, or provider routing.
-- A rule that names a tool, a slash command, a model, or a provider belongs to that harness's configuration, not here. If this file ever grows such a line, it is a defect, not extra guidance.
-- Harness-specific routing lives in that harness's own configuration. For OMP that is `~/dev/omp-config/APPEND_SYSTEM.md` and `config.yml`; for OpenCode it is `~/.config/opencode/`. Never import one harness's routing into another.
-- Loading is proven, not assumed. Each harness must load this file through its documented instruction mechanism, and a probe must show the content in the model's context. A path mentioned inside another instruction file is a reference, not a load.
-- `tests/test_agents_neutrality.py` guards this rule. Run it after editing this file or a harness appendix.
+- This file is the shared contract for every harness. It stays harness-neutral: no tool names, slash commands, model IDs, or provider routing. It names harnesses only to locate their adapters.
+- A rule that names a tool, a slash command, a model, or a provider belongs to that harness's adapter, not here. If this file grows such a line, it is a defect.
+- Harness-specific routing lives in the harness adapter: for OMP, `~/dev/omp-config/APPEND_SYSTEM.md` and `config.yml`; for OpenCode, `~/.config/opencode/`. Never import one harness's routing into another.
+- Skill content lives once in `~/.agents/skills`. A harness either reads that directory or is regenerated from it; never hand-maintain a second copy.
+- Each harness loads this file through its own documented mechanism. Loading is proven, not assumed. A path mentioned inside another instruction file is a reference, not a load.
+- A project contract applies only in its project directory. Project rules do not become global rules, and this file does not authorize work in a project.
+- `tests/test_agents_neutrality.py` guards this rule. Run it after editing this file or a harness adapter.
 
 <!-- gauntlet-loop:begin -->
 ## Default verification loop

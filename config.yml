@@ -47,13 +47,11 @@ enabledModels:
   - openai-codex/gpt-6.1-sol
   - openai-codex/gpt-6-luna
   - openai-codex/gpt-6-astra
-  - xai-oauth/grok-4.7:high
-  - xai-oauth/grok-4.7:xhigh
+  - xai-oauth/grok-4.7
   - deepseek/*
 modelProviderOrder:
   - google-antigravity
   - openai-codex
-  - cursor
   - xai-oauth
   - xai
   - deepseek
@@ -62,11 +60,6 @@ retry:
   modelFallback: true
   maxRetries: 2
   fallbackOn: usage-limit
-  # One ladder, one rule. Primary is the role's own model; the only fallback
-  # rung is DeepSeek (no quota, paid per token). Gemini's weekly window is
-  # nearly spent, so it is a primary for cheap utility roles only and never a
-  # fallback. Image generation has no substitute, so it gets an empty chain.
-  # Claude models are not used: they came through the Gemini subscription.
   fallbackChains:
     plan:
       - deepseek/deepseek-v4-pro
@@ -92,10 +85,9 @@ retry:
       - deepseek/deepseek-v4-flash-vision-exp
     image: []
 skills:
-  customDirectories:
-    - ~/.omp/agent/skills
+  customDirectories: []
   enableAgentsProject: false
-  enableAgentsUser: false
+  enableAgentsUser: true
   enableClaudeProject: false
   enableClaudeUser: false
   enableCodexUser: false
@@ -124,3 +116,16 @@ providers:
 advisor:
   enabled: true
   continueSeverity: blocker
+  reviewMode: agent-end
+  reviewInterval: 3
+compaction:
+  modelThresholds:
+    xai-oauth/grok-4.20-0309-non-reasoning: f150000
+    xai-oauth/grok-4.20-0309-reasoning: f150000
+    xai-oauth/grok-4.20-multi-agent-0309: f150000
+    xai-oauth/grok-4.3: f150000
+    xai-oauth/grok-4.5: f150000
+    xai-oauth/grok-4.6: f150000
+    xai-oauth/grok-4.7: f150000
+    xai-oauth/grok-build: f150000
+    xai-oauth/grok-build-0.1: f150000
