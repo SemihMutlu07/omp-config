@@ -14,7 +14,7 @@ modelRoles:
   task: google-antigravity/gemini-3.8-flash:high
   vision: google-antigravity/gemini-3.8-flash:medium
   plan: anthropic/claude-sonnet-5-5:xhigh
-  slow: anthropic/claude-sonnet-5-5:xhigh
+  slow: anthropic/claude-opus-5-5:high
   advisor: anthropic/claude-sonnet-5-5:medium
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
@@ -22,14 +22,13 @@ modelRoles:
 cycleOrder:
   - smol
   - default
-  - slow
 task:
   agentModelOverrides:
     scout: google-antigravity/gemini-3.8-flash:max
     sonic: google-antigravity/gemini-3.8-flash:max
     task: google-antigravity/gemini-3.8-flash:max
-    reviewer: google-antigravity/gemini-3.8-flash:max
-    security-reviewer: google-antigravity/gemini-3.8-flash:max
+    reviewer: "@slow"
+    security-reviewer: "@slow"
   maxConcurrency: 6
   maxRecursionDepth: 1
   softRequestBudget: 25
@@ -49,11 +48,13 @@ enabledModels:
   - anthropic/claude-haiku-5-5
   - anthropic/claude-sonnet-5-5
   - anthropic/claude-opus-5-5
+  - deepseek/deepseek-v4-pro
 modelProviderOrder:
   - google-antigravity
   - anthropic
   - xai-oauth
   - xai
+  - deepseek
 retry:
   usageAwareFallback: true
   modelFallback: true
@@ -61,14 +62,18 @@ retry:
   fallbackOn: usage-limit
   fallbackChains:
     plan:
-      - xai-oauth/grok-4.7
+      - google-antigravity/gemini-3.8-flash:high
+      - deepseek/deepseek-v4-pro:high
     slow:
-      - xai-oauth/grok-4.7
+      - anthropic/claude-sonnet-5-5:high
+      - google-antigravity/gemini-3.8-flash:high
+      - deepseek/deepseek-v4-pro:high
     advisor:
       - google-antigravity/gemini-3.8-flash:medium
       - xai-oauth/grok-4.7
     task:
-      - xai-oauth/grok-4.7
+      - google-antigravity/gemini-3.8-flash:high
+      - deepseek/deepseek-v4-pro:high
     judge:
       - xai-oauth/grok-4.7
     default:
@@ -97,8 +102,7 @@ skills:
 extensions: []
 disabledExtensions:
   - extension-module:opencode-free
-disabledProviders:
-  - deepseek
+disabledProviders: []
 commands:
   enableOpencodeProject: false
   enableOpencodeUser: false
@@ -134,3 +138,6 @@ compaction:
     google-antigravity/*: f150000
     google-antigravity/gemini-3.8-flash: f150000
     anthropic/*: f150000
+    anthropic/claude-opus-5-5: f120000
+    anthropic/claude-sonnet-5-5: f150000
+    anthropic/claude-haiku-5-5: f90000

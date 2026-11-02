@@ -65,8 +65,9 @@ export default function (pi: ExtensionAPI) {
 		const ref = await retrieve(prompt, ctx.cwd, ctx.agent.kind === "main");
 		last = ref;
 		if (ctx.agent.kind === "main" && ctx.ui) {
+			const sizeKb = (ref.bytes / 1024).toFixed(1);
 			ctx.ui.setStatus("kasa-context", ref.status === "ready"
-				? `Kasa: ${ref.paths.length} kaynak · ${ref.bytes} B`
+				? `Kasa: ${ref.paths.length} not (${sizeKb} KB)`
 				: ref.status === "no_match" ? "Kasa: eşleşme yok" : "Kasa: YÜKLENEMEDİ");
 		}
 		const content = ref.status === "unavailable"
