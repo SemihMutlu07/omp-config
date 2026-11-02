@@ -38,7 +38,7 @@
 
 - Protect secrets and preserve user data. Back up configuration before substantial rewrites and record the backup path. Avoid broad destructive commands.
 - Never clean a dirty worktree with automatic stash, reset, checkout, or pull. Inspect the change, name its likely owner, and leave it in place.
-- Publication, deployment, external messages, purchases, destructive operations, and Git commits or pushes require user authorization. Verified work without commit authorization is `verified, awaiting authorized commit`.
+- Publication, deployment, external messages, purchases, destructive operations, and Git commits or pushes require user authorization. A project contract can grant standing authorization for commits and pushes to its own repository. Verified work without commit authorization is `verified, awaiting authorized commit`.
 - Do not interrupt or restart unrelated sessions. Avoid simultaneous edits to the same files or worktree.
 - Do not change models, provider routing, credentials, or paid usage settings unless authorized.
 - Treat agent-proposed skills, memories, rules, or automations as candidates; promote them only with user approval.
