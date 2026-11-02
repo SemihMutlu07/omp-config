@@ -6,7 +6,6 @@
  *     - 🎯 Execution Modes: Loop (--until test, 3x)
  *     - ↑ Prepend Modifiers: Task planning, orientation, prompt refinement
  *     - ↓ Append Modifiers: Strict verification, scope fence, UI check, question-first
- *     - 🧩 Stacks: named combos that expand into several skill reads at once
  *     - 🧩 Skills: Curated skill launcher (ask-pocock, ask-matt, gauntlet-loop, ...)
  * - Space: toggle (execution modes are mutually exclusive)
  * - Tab: preview details, command syntax, or snippet body
@@ -154,27 +153,11 @@ export const SKILLS: SkillItem[] = [
 	},
 	{
 		type: "skill",
-		id: "skill:prototype",
-		skill: "prototype",
-		name: "prototype",
-		description: "Tek tasarım sorusunu kodla yanıtla",
-		detail: "UI veya durum modeli kâğıtta çözülmüyorsa küçük, atılabilir bir programla karar verir.",
-	},
-	{
-		type: "skill",
 		id: "skill:research",
 		skill: "research",
 		name: "research",
 		description: "Birincil kaynaklardan atıflı not",
 		detail: "Okuma işini arka plan ajanına verir; sonucu kaynak atıflı bir dosya olarak bırakır.",
-	},
-	{
-		type: "skill",
-		id: "skill:code-review",
-		skill: "code-review",
-		name: "code-review",
-		description: "Diff'i iki eksende incele",
-		detail: "Standartlar ve spec ekseninde bağımsız inceleme yapar; kriteri gevşetmeden PASS/FAIL verir.",
 	},
 	{
 		type: "skill",
@@ -191,67 +174,6 @@ export const SKILLS: SkillItem[] = [
 		name: "constraint-driven",
 		description: "Kalite eşiğini yazılı sözleşmeye çevir",
 		detail: "CONSTRAINTS.md yazar ve diff'te eşik düşürmeyi yakalar: silinen test, eklenen @ts-ignore, düşürülen sayı. Repo başına bir kez çalışır.",
-	},
-	{
-		type: "skill",
-		id: "skill:agent-interface-design",
-		skill: "agent-interface-design",
-		name: "agent-interface",
-		description: "Ajanın yanlış kullanamayacağı tool tasarla",
-		detail: "CLI, script ve MCP tool arayüzünü ajan kullanımına göre tasarlar. Sessiz başarı, belirsiz parametre ve uzun örnek yığını yerine kendi kendini öğreten arayüz.",
-	},
-];
-
-/** A named combo: one press instead of ticking every member skill. */
-export interface StackItem {
-	type: "stack";
-	id: string;
-	name: string;
-	description: string;
-	detail: string;
-	skills: string[];
-}
-
-export const STACKS: StackItem[] = [
-	{
-		type: "stack",
-		id: "stack:explore",
-		name: "Keşif",
-		description: "Planı sorgula, kaynağı topla",
-		detail: "grill-for-unknowns planı doküman ve koda karşı sorgular; research birincil kaynakları atıflı bir dosyaya yazar. Uygulama öncesi bulanık planda kullan.",
-		skills: ["grill-for-unknowns", "research"],
-	},
-	{
-		type: "stack",
-		id: "stack:build",
-		name: "Uygula",
-		description: "Spec → kod → bağımsız review",
-		detail: "gauntlet-loop kabul kriteriyle uygular ve çalışır yüzeyde doğrular; code-review diff'i standart ve spec ekseninde inceler. Varsayılan kod değişikliği.",
-		skills: ["gauntlet-loop", "code-review"],
-	},
-	{
-		type: "stack",
-		id: "stack:bug",
-		name: "Hata",
-		description: "Kök nedeni bul, testle kilitle",
-		detail: "diagnosing-bugs hatayı önce yeniden üretir; tdd düzeltmeyi kırmızıdan yeşile götürür. Sebep bilinmeyen hata bildirimlerinde kullan.",
-		skills: ["diagnosing-bugs", "tdd"],
-	},
-	{
-		type: "stack",
-		id: "stack:ui",
-		name: "UI",
-		description: "Prototip → tasarım → motion review",
-		detail: "prototype tasarım sorusunu kodla yanıtlar; frontend-design görsel kaliteyi kurar; review-animations hareketi ölçütle denetler.",
-		skills: ["prototype", "frontend-design", "review-animations"],
-	},
-	{
-		type: "stack",
-		id: "stack:maintain",
-		name: "Bakım",
-		description: "Bağlamı ve skill'leri denetle",
-		detail: "context-audit AGENTS.md ve skill tanımlarındaki çelişki ile tekrarı bulur; writing-great-skills düzeltir; skill-creator tetiklenme başarısını ölçer.",
-		skills: ["context-audit", "writing-great-skills", "skill-creator"],
 	},
 ];
 
@@ -271,10 +193,7 @@ export function availableSkills(): SkillItem[] {
 	return SKILLS.filter((s) => skillExists(s.skill));
 }
 
-/** A stack is runnable only when every member exists; no silently partial stacks. */
-export function availableStacks(): StackItem[] {
-	return STACKS.filter((s) => s.skills.every(skillExists));
-}
+
 const WIDGET_ID = "prompt-snippets";
 
 export function parseSnippet(filename: string, raw: string): Snippet | null {
@@ -344,12 +263,7 @@ export function formatBadges(snippets: Snippet[], enabled: Set<string>, theme: T
 		}
 	}
 
-	// 3. Stacks, then single skills
-	for (const s of STACKS) {
-		if (enabled.has(s.id)) {
-			pills.push(theme.fg("success", `[🧩 ${s.name} ×${s.skills.length}]`));
-		}
-	}
+
 	for (const s of SKILLS) {
 		if (enabled.has(s.id)) {
 			pills.push(theme.fg("accent", `[🧩 ${s.name}]`));
@@ -376,7 +290,7 @@ export type CockpitItem =
 	| { kind: "keyword"; data: MagicKeywordItem }
 	| { kind: "execution"; data: ExecutionModeItem }
 	| { kind: "skill"; data: SkillItem }
-	| { kind: "stack"; data: StackItem }
+
 	| { kind: "snippet"; data: Snippet };
 
 export interface SnippetsMenuOptions {
@@ -405,7 +319,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 
 	const prepends = snippets.filter((s) => s.placement === "prepend");
 	const appends = snippets.filter((s) => s.placement === "append");
-	const stacks = availableStacks();
+
 	const skills = availableSkills();
 
 	// Build unified items list
@@ -414,7 +328,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 		...EXECUTION_MODES.map((e) => ({ kind: "execution" as const, data: e })),
 		...prepends.map((s) => ({ kind: "snippet" as const, data: s })),
 		...appends.map((s) => ({ kind: "snippet" as const, data: s })),
-		...stacks.map((s) => ({ kind: "stack" as const, data: s })),
+
 		...skills.map((s) => ({ kind: "skill" as const, data: s })),
 	];
 
@@ -491,14 +405,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 			for (const s of appends) pushItem({ kind: "snippet", data: s });
 		}
 
-		// 5. Stacks: one press for a named combo; each member stays selectable on its own.
-		if (stacks.length > 0) {
-			rows.push({
-				text: sectionHeader("🧩 Stacks", "success", stacks.map((s) => s.id), width),
-				itemIndex: null,
-			});
-			for (const s of stacks) pushItem({ kind: "stack", data: s });
-		}
+
 
 		// 6. Skills last: a long optional list must not push snippets off screen.
 		if (skills.length > 0) {
@@ -545,25 +452,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 			)) {
 				rows.push(truncateToWidth(wrapped, width));
 			}
-		} else if (item.kind === "stack") {
-			rows.push(truncateToWidth(theme.fg("success", `Stack · ${d.skills.length} skill`), width));
-			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
-			rows.push(truncateToWidth(theme.bold("Açıklama:"), width));
-			for (const wrapped of wrapTextWithAnsi(d.detail, width)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-			rows.push("");
-			rows.push(truncateToWidth(theme.bold("Üyeler:"), width));
-			for (const member of d.skills) {
-				rows.push(truncateToWidth(theme.fg("dim", `  skill://${member}/SKILL.md`), width));
-			}
-			rows.push("");
-			for (const wrapped of wrapTextWithAnsi(
-				theme.fg("dim", "Etki: Seçilirse her üye için ayrı bir okuma direktifi eklenir; aynı skill iki kez yazılmaz."),
-				width,
-			)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
+
 		} else if (item.kind === "skill") {
 			rows.push(truncateToWidth(theme.fg("accent", `Skill · skill://${d.skill}/SKILL.md`), width));
 			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
@@ -637,7 +526,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 					: `Detay · ${currentItem.data.name}${working.has(currentItem.data.id) ? " · seçili" : ""}`;
 			const hints =
 				mode === "list"
-					? "↑↓ gez · 1-6 · Space seç · c temizle · Tab detay · Enter uygula · Esc"
+					? "↑↓ gez · 1-5 · Space seç · c temizle · Tab detay · Enter uygula · Esc"
 					: "↑↓ kaydır · Space seç · Tab/Esc geri · Enter uygula";
 
 			// Footer height depends on width, so measure it before sizing the viewport.
@@ -685,8 +574,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 				const execStart = MAGIC_KEYWORDS.length;
 				const prepStart = execStart + EXECUTION_MODES.length;
 				const appStart = prepStart + prepends.length;
-				const stackStart = appStart + appends.length;
-				const skillStart = stackStart + stacks.length;
+				const skillStart = appStart + appends.length;
 
 				if (data === "c" || data === "C") {
 					working.clear();
@@ -708,11 +596,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 					cursor = appStart;
 					tui.requestRender();
 					return;
-				} else if (data === "5" && stacks.length > 0) {
-					cursor = stackStart;
-					tui.requestRender();
-					return;
-				} else if (data === "6" && skills.length > 0) {
+				} else if (data === "5" && skills.length > 0) {
 					cursor = skillStart;
 					tui.requestRender();
 					return;
@@ -793,17 +677,13 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 export function assemblePrompt(working: Set<string>, snippets: Snippet[], text: string): string {
 	const activeKeywords = MAGIC_KEYWORDS.filter((k) => working.has(k.id)).map((k) => k.keyword);
 	const activeExecution = EXECUTION_MODES.find((e) => working.has(e.id));
-	const activeStacks = availableStacks().filter((s) => working.has(s.id));
+
 	const activeSkills = availableSkills().filter((s) => working.has(s.id));
 	const activeSnippets = snippets.filter((s) => working.has(s.id));
 	const prependBodies = activeSnippets.filter((s) => s.placement === "prepend").map((s) => s.body);
 	const appendBodies = activeSnippets.filter((s) => s.placement === "append").map((s) => s.body);
 
-	// A stack expands in place; a member selected twice is read once.
-	const skillNames: string[] = [];
-	for (const name of [...activeStacks.flatMap((s) => s.skills), ...activeSkills.map((s) => s.skill)]) {
-		if (!skillNames.includes(name)) skillNames.push(name);
-	}
+	const skillNames = activeSkills.map((s) => s.skill);
 
 	const sections: string[] = [];
 	if (activeKeywords.length > 0) sections.push(activeKeywords.join("\n"));
@@ -843,7 +723,7 @@ export default function (pi: ExtensionAPI) {
 			...MAGIC_KEYWORDS.map((k) => k.id),
 			...EXECUTION_MODES.map((e) => e.id),
 			...SKILLS.map((s) => s.id),
-			...STACKS.map((s) => s.id),
+
 			...snippets.map((s) => s.id),
 		]);
 		enabled = new Set([...enabled].filter((id) => validIds.has(id)));

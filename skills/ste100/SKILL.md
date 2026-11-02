@@ -1,6 +1,6 @@
 ---
 name: ste100
-description: Use this for every agent reply, not pictures or finished prose.
+description: Controlled-language pass for a procedure or runbook the user asked for. Do not apply it to an ordinary reply. Match the user's current language.
 ---
 
 # STE100 — controlled language, countable limits
@@ -14,9 +14,9 @@ point is text with exactly one reading.
 
 ## Default
 
-Every reply uses the countable limits below. This is the default. Do not use the old 80% soft mode.
+Use the countable limits below when the user asks for a procedure, a runbook, or a controlled-language pass. Do not use the old 80% soft mode.
 
-Reply in English. Use another language only when the user asks for it in the current message.
+Match the user's current language. Use another language only when the user asks for it in the current message.
 
 Give only the answer. Add detail, options, or history only when the user asks for them.
 
@@ -58,10 +58,10 @@ keeps it.
 
 ## Turkish
 
-Use this section only when the user asks for Turkish in the current message.
-The approved-word dictionary is English-only and does not transfer. Keep the structural
-rules. In Turkish, split any sentence that carries more than one finite verb, and do not
-stack nested `-dik/-ecek` clauses. Prefer the plain verb over the `-me/-ma` noun form.
+For Turkish text, follow the shared ISO 24495-1 plain-language rule.
+Do not apply the English word list or English-specific sentence limits.
+Keep structural clarity: one action per sentence, no nested clauses, active voice.
+Do not translate code, paths, commands, or technical terms; state the direct result first.
 
 ## Self-check before you send
 

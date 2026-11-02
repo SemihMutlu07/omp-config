@@ -1,13 +1,13 @@
 ---
 name: gauntlet-loop
-description: Top-level default verification loop for implementing and fixing code, scripts, or executable configurations, as well as explicit quality passes on concrete artifacts. Drives task recovery, compact spec derivation, bounded implementation, self-check, independent review, real runtime verification, and capped repairs.
+description: Verification loop for implementing and fixing code, scripts, or executable configurations. Drives compact spec derivation, bounded implementation, self-check, proportionate verification, and capped repairs, with independent review for substantial changes.
 metadata:
-  short-description: Default code implementation and independent verification loop
+  short-description: Code implementation and proportionate verification loop
 ---
 
 # Gauntlet Loop
 
-Kod, script veya çalıştırılabilir konfigürasyon değişikliklerinde uygulanan varsayılan doğrulama ve kalite döngüsüdür. Varsayımlara değil; somut hedefe, bağımsız denetime ve gözlenen çalışma kanıtına dayanır.
+Kod, script veya çalıştırılabilir konfigürasyon değişikliklerinde uygulanan doğrulama ve kalite döngüsüdür. Varsayımlara değil; somut hedefe, duruma uygun doğrulamaya ve gözlenen çalışma kanıtına dayanır.
 
 ## Kapsam ve Devreye Girme
 
@@ -19,7 +19,7 @@ Kod, script veya çalıştırılabilir konfigürasyon değişikliklerinde uygula
 ## 1. Bağlamı Topla ve Kompakt Spec Çıkar
 
 1. Mevcut bağlamı, önceki kararları ve son devir (handoff) durumunu toparla; eldeki bilgi yeterliyse kullanıcıya soru tekrarlama.
-2. Erişilebiliyorsa paylaşılan mevcut Notion görev kartını oku ve güncelle; erişilemezse yerel pending checkpoint tut.
+2. İş zaten Notion takibi içeriyorsa ilgili görev kaydını oku ve güncelle; yerel işlerde harici Notion arama veya hazırlığı yapma, yerel bağlamı kullan.
 3. İşe başlamadan önce kompakt spec sözleşmesini dondur:
 
 ```text
@@ -46,12 +46,13 @@ KNOWN ISSUES: <kanıtlanmayan veya açıkta kalan noktalar>
 
 3. Yazarın "tamamlandı" demesi, scaffold'ın derlenmesi veya daraltılmış testler tek başına nihai kanıt sayılmaz.
 
-## 3. Bağımsız İnceleme (Independent Review)
+## 3. İnceleme ve Bağımsız Denetim (Proportionate Review)
 
-1. Değişikliği bizzat yazmamış, salt-okuma ve test yetkili bağımsız bir reviewer çalıştır.
+1. **Bağımsız inceleme eşiği:** Bileşenler arası davranış değişikliklerinde, güvenlik veya veri sınırlarında, migrasyonlarda ve kullanıcı açıkça istediğinde bağımsız reviewer zorunludur. Küçük ve geri alınabilir değişikliklerde ilgili test ve kontroller yeterlidir.
+2. Bağımsız review gerektiğinde: Değişikliği bizzat yazmamış, salt-okuma ve test yetkili bağımsız bir reviewer çalıştır.
    Başlatma aracından dönen gerçek reviewer oturum/task kimliğini ve o reviewer'dan gelen sonucu kaydet. Yalnız başlatma niyeti, boş bir wait sonucu veya yazarın "review PASS" cümlesi inceleme kanıtı değildir; sonuç alınamadıysa `BLOCKED/PARTIAL` kalır.
-2. Reviewer'a yazarın çıkarımlarını/savunmalarını değil; orijinal görev/spec ile çalışma ağacının güncel durumunu (`git diff`, untracked dosyalar, HEAD) ilet.
-3. Reviewer kodu değiştirmez, kriterleri gevşetmez, alt-agent açmaz. Çıktı formatı:
+3. Reviewer'a yazarın çıkarımlarını/savunmalarını değil; orijinal görev/spec ile çalışma ağacının güncel durumunu (`git diff`, untracked dosyalar, HEAD) ilet.
+4. Reviewer kodu değiştirmez, kriterleri gevşetmez, alt-agent açmaz. Çıktı formatı:
 
 ```text
 STATUS:              PASS | FAIL | BLOCKED
@@ -60,16 +61,16 @@ EVIDENCE:            <gözlenen test çıktısı, diff incelemesi, runtime kanı
 REQUIRED CORRECTION: <gereken en küçük somut düzeltme veya "None">
 ```
 
-4. Harness'ın yerel rol ve araçlarını kullan (ayrıntılar: [references/harnesses.md](references/harnesses.md) ve [references/reviewer.md](references/reviewer.md)). Farklı model zorunlu değildir; mevcut rol yönlendirmesi yeterlidir.
-5. Reviewer aracı veya alt-agent desteklenmiyorsa: durumu BLOCKED veya PARTIAL olarak işaretle, eksik yeteneği ve insan incelemesi için temiz devir özetini sun. Asla bağımsız inceleme yapılmış gibi davranma.
+5. Harness'ın yerel rol ve araçlarını kullan (ayrıntılar: [references/harnesses.md](references/harnesses.md) ve [references/reviewer.md](references/reviewer.md)). Farklı model zorunlu değildir; mevcut rol yönlendirmesi yeterlidir.
+6. Bağımsız review zorunlu olduğu halde reviewer aracı veya alt-agent desteklenmiyorsa: durumu BLOCKED veya PARTIAL olarak işaretle, eksik yeteneği ve insan incelemesi için temiz devir özetini sun. Asla bağımsız inceleme yapılmış gibi davranma.
 
 ## 4. Otomasyon ve Gerçek Çalışma Doğrulaması
 
 1. İlgili otomatik testleri, tip kontrollerini ve lint kontrollerini bizzat çalıştır.
 2. **Gerçek yüzey testi:** Testler tek başına uygulamanın çalıştığını kanıtlamaz; runtime, CLI veya UI akışını bizzat tetikle ve çıktıyı gözlemle.
 3. **Geçersizlik ilkesi:** Kod değişince etkilenen kontrolleri ve review'u yenile; yalnızca HEAD hash'i yetersizdir, güncel dirty diff ve ilgili untracked içerik doğrulanmalıdır.
-4. **PASS şartı:** Güncel kaynakta testlerin başarılı çalışması, bağımsız reviewer onayı ve kabul kriterlerinin eksiksiz kanıtlanmasıdır.
-5. Kanıtları mevcut görev kartına veya gerektiğinde kısa bir `VERIFY.md` dosyasına kaydet; küçük işlerde gereksiz dosya kalabalığı yaratma. Yeni makbuz şeması veya servisi kurma.
+4. **PASS şartı:** Güncel kaynakta testlerin başarılı çalışması, (gerektiğinde) bağımsız reviewer onayı ve kabul kriterlerinin eksiksiz kanıtlanmasıdır.
+5. Kanıtları projenin mevcut kayıtlarına (varsa takip kartına, gerektiğinde kısa bir `VERIFY.md` dosyasına) kaydet; küçük işlerde gereksiz dosya kalabalığı yaratma. Yeni makbuz şeması veya servisi kurma.
 
 ## 5. Sınırlı Tamir Döngüsü (Capped Repair)
 
@@ -80,7 +81,7 @@ REQUIRED CORRECTION: <gereken en küçük somut düzeltme veya "None">
 5. Kullanıcı "dur" dediğinde hemen dur ve açıkta kalan durumu bildir.
 6. Tüm adımlar PASS olduğunda çalışma incelemeye hazırdır; commit, push veya deploy için ayrı kullanıcı onayı gerekir.
 
-Bu skill aktif oturumun varsayılan iş akışıdır. Tek başına otomatik uyanma, zamanlayıcı veya atlanamaz runtime kapısı kurmaz. Global talimat değişikliğinin mevcut konuşmada yeniden yüklendiğini varsayma; yeni oturumda keşfi ve davranışı ayrıca doğrula.
+Bu skill aktif oturumun iş akışıdır. Tek başına otomatik uyanma, zamanlayıcı veya atlanamaz runtime kapısı kurmaz. Global talimat değişikliğinin mevcut konuşmada yeniden yüklendiğini varsayma; yeni oturumda keşfi ve davranışı ayrıca doğrula.
 
 ## Referanslar
 

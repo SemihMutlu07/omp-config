@@ -1,8 +1,8 @@
 ---
 name: clarity
 description: |
-  Choose how to explain something, and climb only as far as needed. Every reply
-  already starts at strict STE100. Use this skill when the user asks to explain,
+  Choose how to explain something, and climb only as far as needed. Follow the
+  shared language rule. Use this skill when the user asks to explain,
   teach, or clarify a topic ("açıkla", "anlat", "explain", "nedir", "bu ne demek",
   "anlamadım") and does not name a format. Add detail only when the user asks.
   Climb to a diagram, HTML, or video only on a clear signal.
@@ -18,8 +18,8 @@ has none leaves them with nothing. Match the rung to the reader, and climb only 
 
 | # | Rung | Use when | Tool |
 | - | ---- | -------- | ---- |
-| 0 | Strict STE100 text | Default for every reply. No extra detail. | `ste100` skill |
-| 1 | More STE100 detail | The user asks for detail, or says the answer is not clear. | `ste100` skill |
+| 0 | Clear text | Default in the user's language. No extra detail. | Shared language rule |
+| 1 | More detail | The user asks for detail, or says the answer is not clear. | Shared language rule |
 | 2 | ASCII diagram | 3+ parts, or a flow between them | draw it in the chat |
 | 3 | Single-file HTML | The reader has no words for the topic, or needs to step through it | one self-contained file |
 | 4 | Explainer video | Explicit request only | — |

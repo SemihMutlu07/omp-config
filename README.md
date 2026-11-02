@@ -102,38 +102,52 @@ omp login
 * **xAI SuperGrok:** Grok 4.7 through `xai-oauth`.
 
 
-### Model routing (2026-10-19)
+### Model routing (updated 2026-11-02)
 
 OMP is the primary coding harness.
 `config.yml` holds the model assignments. Prompts and subagents use role aliases.
 
 | Work | Role or agent | Model |
 |---|---|---|
-| Main chat and implementation | `default`, `task` | GPT-6 Luna high |
-| Small work, commit text, memory | `smol`, `tiny`, `commit`, `memory` | Gemini 3.8 Flash |
-| Read-only research and mechanical work | `scout`, `sonic` → `@smol` | Gemini 3.8 Flash |
-| Bulk classification | `judge` | Luna medium |
-| Planning and difficult one-shots | `plan`, `slow` | Sol 6.1 xhigh |
-| Correctness and security review | `reviewer`, `security-reviewer` → `@slow` | Sol 6.1 xhigh |
-| Image analysis and image role | `vision`, `image` | Gemini 3.8 Flash medium / low |
-| Passive review, enabled | `advisor` | Sol 6.1 medium |
+| Main chat | `default` | Claude Haiku 5.5 xhigh |
+| Subagent implementation | `task` role; `task` agent | Gemini 3.8 Flash high; Gemini 3.8 Flash max |
+| Small work, commit text, memory | `smol`, `tiny`, `commit`, `memory`, `judge` | Gemini 3.8 Flash |
+| Read-only research and mechanical work | `scout`, `sonic` | Gemini 3.8 Flash max |
+| Planning and difficult one-shots | `plan`, `slow`, `prewalk.from` | Claude Sonnet 5.5 xhigh |
+| Correctness and security review | `reviewer`, `security-reviewer` | Gemini 3.8 Flash max |
+| Image analysis and image role | `vision`, `image` | Gemini 3.8 Flash medium; Gemini 3.1 Flash Image |
+| Passive review, enabled | `advisor` | Claude Sonnet 5.5 medium |
 
 Use OMP plan mode for read-only planning; a model role does not restrict tools.
 
+Prewalk is opt-in: `prewalk.enabled` is `false`. Use `/prewalk` or `--prewalk` per session. The session plans on `prewalk.from` (`@plan`, Sonnet 5.5 xhigh) and hands edits to `prewalk.into` (`@smol`, Gemini 3.8 Flash) at the first edit. `prewalk.auto` is `suggest`: the `judge` role only suggests prewalk for each new task. Do not set `prewalk.auto` to `on` until a live comparison shows better cost and pass rate. `task.prewalk` stays `false`: the generic `task` agent already targets `smol`, and OMP skips prewalk when the start and target models match.
+
+Before changing a role, run the same edit tasks on the candidate model and record pass rate, cost, and time. `edit.mode` stays `hashline`.
+
 Delegation permits one concurrent child and one nesting level.
 Each child receives a soft budget of 25 requests, not a token or subscription limit.
-The enabled model list contains Gemini 3.8 Flash, GPT-6.1 Sol, GPT-6 Luna, GPT-6 Astra, Grok 4.7 (`:high`, `:xhigh`), and the `deepseek/*` wildcard. Claude models are not enabled: they were only reachable through the Gemini subscription.
-GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is enabled again, but only as a paid, quota-free fallback rung.
+The enabled model list contains Gemini 3.8 Flash, Grok 4.7 (`:high`, `:xhigh`), and Claude Haiku 5.5, Sonnet 5.5, and Opus 5.5. GPT-6 models are not enabled.
+GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is disabled through `disabledProviders`. Grok 4.7 is the fallback rung for every chain.
 Do not restore `extensions/opencode-free.ts` or add those model ids back to `enabledModels`.
 OMP does not load OpenCode project or user commands.
-Model switching on request failure is enabled (`retry.modelFallback: true`, `usageAwareFallback: true`, `maxRetries: 2`, trigger `usage-limit`). Each chain in `retry.fallbackChains` holds only the DeepSeek rung: `deepseek-v4-pro` for `plan`/`slow`/`advisor`/`task`/`judge`, `deepseek-flash` for `smol`/`tiny`/`memory`/`commit`. `default` falls to Sol medium; `vision` falls to `deepseek-v4-flash-vision-exp`; `image` has an empty chain because no substitute is configured.
+Model switching on request failure is enabled (`retry.modelFallback: true`, `usageAwareFallback: true`, `maxRetries: 2`, trigger `usage-limit`). Each chain in `retry.fallbackChains` ends at `xai-oauth/grok-4.7`. The `default` and `advisor` chains try Gemini 3.8 Flash medium first. `image` has an empty chain because no substitute is configured. Compaction thresholds are set at 150k (`f150000`) so sessions stay under Grok's 256k window.
 Idle recaps and cache warming remain disabled. The advisor is enabled with `continueSeverity: blocker`.
 API errors permit two retries.
 
-A live CLI smoke returned `GEMINI_ROLE_OK` from `@smol` and `LUNA_ROLE_OK` from `@task`.
+A live CLI smoke returned `GEMINI_ROLE_OK` from `@smol`, `LUNA_ROLE_OK` from `@task`, and `ADVISOR_SMOKE_OK` from `@advisor`, whose JSON stream reported `provider: openai-codex`, `model: gpt-6.1-sol`.
 `omp config get modelRoles --json` confirmed the saved role assignments.
 The actual OMP TUI also loaded the Workflowz snippet and prepended its instructions on submission.
 Start a new session to load changes to the routing rules in `AGENTS.md`.
+
+`WATCHDOG.yml` sets advisor note wording. Notes follow the latest user's
+language: ISO 24495-1 plain-language principles for Turkish and ASD-STE100
+principles for English. Each note covers one actionable finding in one paragraph,
+with at most three short sentences and 60 words. Notes keep decisive evidence
+and the next action, but do not include scripts or command chains.
+A live `omp -p --advisor` smoke on 2026-10-28 produced Turkish and English
+advisor cards of 29 and 37 words; both kept the missing-file evidence and blocker
+severity. The roster, models, review cadence, and continuation threshold did not
+change. Start a new OMP session to load the updated advisor instructions.
 
 #### Workflowz usage and role activation
 

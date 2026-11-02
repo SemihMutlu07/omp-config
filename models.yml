@@ -1,0 +1,14 @@
+providers:
+  xai-oauth:
+    modelOverrides:
+      grok-4.7:
+        # Local budget only: keeps Grok 4.7 on the 256k window so long-context
+        # pricing never starts. No maxContextWindow, so /extended-context cannot
+        # reopen the 500k window.
+        contextWindow: 256000
+        maxTokens: 64000
+  xai:
+    modelOverrides:
+      grok-4.7:
+        contextWindow: 256000
+        maxTokens: 64000

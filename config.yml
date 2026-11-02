@@ -10,31 +10,32 @@ modelRoles:
   tiny: google-antigravity/gemini-3.8-flash
   memory: google-antigravity/gemini-3.8-flash
   commit: google-antigravity/gemini-3.8-flash
-  judge: openai-codex/gpt-6-luna:medium
-  task: openai-codex/gpt-6-luna:high
+  judge: google-antigravity/gemini-3.8-flash
+  task: google-antigravity/gemini-3.8-flash:high
   vision: google-antigravity/gemini-3.8-flash:medium
-  plan: openai-codex/gpt-6.1-sol:xhigh
-  slow: openai-codex/gpt-6.1-sol:xhigh
-  advisor: openai-codex/gpt-6.1-sol:medium
+  plan: anthropic/claude-sonnet-5-5:xhigh
+  slow: anthropic/claude-sonnet-5-5:xhigh
+  advisor: anthropic/claude-sonnet-5-5:medium
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
-  default: deepseek/deepseek-flash
+  default: google-antigravity/gemini-3.8-flash
 cycleOrder:
   - smol
   - default
   - slow
 task:
   agentModelOverrides:
-    scout: deepseek/deepseek-flash
-    sonic: deepseek/deepseek-v4-flash
-    task: "@task"
-    reviewer: "@slow"
-    security-reviewer: "@slow"
+    scout: google-antigravity/gemini-3.8-flash:max
+    sonic: google-antigravity/gemini-3.8-flash:max
+    task: google-antigravity/gemini-3.8-flash:max
+    reviewer: google-antigravity/gemini-3.8-flash:max
+    security-reviewer: google-antigravity/gemini-3.8-flash:max
   maxConcurrency: 6
   maxRecursionDepth: 1
   softRequestBudget: 25
-  enableEffort: false
+  enableEffort: true
   showResolvedModelBadge: true
+  maxEffort: max
 dev:
   autoqaConsent: granted
 startup:
@@ -44,17 +45,15 @@ startup:
 defaultThinkingLevel: xhigh
 enabledModels:
   - google-antigravity/gemini-3.8-flash
-  - openai-codex/gpt-6.1-sol
-  - openai-codex/gpt-6-luna
-  - openai-codex/gpt-6-astra
   - xai-oauth/grok-4.7
-  - deepseek/*
+  - anthropic/claude-haiku-5-5
+  - anthropic/claude-sonnet-5-5
+  - anthropic/claude-opus-5-5
 modelProviderOrder:
   - google-antigravity
-  - openai-codex
+  - anthropic
   - xai-oauth
   - xai
-  - deepseek
 retry:
   usageAwareFallback: true
   modelFallback: true
@@ -62,27 +61,29 @@ retry:
   fallbackOn: usage-limit
   fallbackChains:
     plan:
-      - deepseek/deepseek-v4-pro
+      - xai-oauth/grok-4.7
     slow:
-      - deepseek/deepseek-v4-pro
+      - xai-oauth/grok-4.7
     advisor:
-      - deepseek/deepseek-v4-pro
+      - google-antigravity/gemini-3.8-flash:medium
+      - xai-oauth/grok-4.7
     task:
-      - deepseek/deepseek-v4-pro
+      - xai-oauth/grok-4.7
     judge:
-      - deepseek/deepseek-v4-pro
+      - xai-oauth/grok-4.7
     default:
-      - openai-codex/gpt-6.1-sol:medium
+      - google-antigravity/gemini-3.8-flash:medium
+      - xai-oauth/grok-4.7
     smol:
-      - deepseek/deepseek-flash
+      - xai-oauth/grok-4.7
     tiny:
-      - deepseek/deepseek-flash
+      - xai-oauth/grok-4.7
     memory:
-      - deepseek/deepseek-flash
+      - xai-oauth/grok-4.7
     commit:
-      - deepseek/deepseek-flash
+      - xai-oauth/grok-4.7
     vision:
-      - deepseek/deepseek-v4-flash-vision-exp
+      - xai-oauth/grok-4.7
     image: []
 skills:
   customDirectories: []
@@ -96,7 +97,8 @@ skills:
 extensions: []
 disabledExtensions:
   - extension-module:opencode-free
-disabledProviders: []
+disabledProviders:
+  - deepseek
 commands:
   enableOpencodeProject: false
   enableOpencodeUser: false
@@ -106,7 +108,7 @@ memories:
   maxRolloutsPerStartup: 8
 browser:
   headless: false
-hideThinkingBlock: false
+hideThinkingBlock: true
 codexResets:
   autoRedeem: "no"
 recap:
@@ -118,14 +120,17 @@ advisor:
   continueSeverity: blocker
   reviewMode: agent-end
   reviewInterval: 3
+prewalk:
+  enabled: false
+  from: "@plan"
+  into: "@smol"
+  auto: suggest
+  autoTarget: "@smol"
 compaction:
+  thresholdTokens: 150000
   modelThresholds:
-    xai-oauth/grok-4.20-0309-non-reasoning: f150000
-    xai-oauth/grok-4.20-0309-reasoning: f150000
-    xai-oauth/grok-4.20-multi-agent-0309: f150000
-    xai-oauth/grok-4.3: f150000
-    xai-oauth/grok-4.5: f150000
-    xai-oauth/grok-4.6: f150000
+    xai-oauth/*: f150000
     xai-oauth/grok-4.7: f150000
-    xai-oauth/grok-build: f150000
-    xai-oauth/grok-build-0.1: f150000
+    google-antigravity/*: f150000
+    google-antigravity/gemini-3.8-flash: f150000
+    anthropic/*: f150000

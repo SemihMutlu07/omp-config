@@ -17,6 +17,8 @@ OPENCODE_CONFIG = HOME / ".config/opencode/opencode.json"
 OPENCODE_ADAPTER = HOME / ".config/opencode/AGENTS.md"
 OMP_AGENTS_LINK = HOME / ".omp/agent/AGENTS.md"
 OMP_APPENDIX_LINK = HOME / ".omp/agent/APPEND_SYSTEM.md"
+OMP_RULES_LINK = HOME / ".omp/agent/RULES.md"
+RULES = ROOT / "RULES.md"
 KASA_CONTRACT = HOME / "Kasa/AGENTS.md"
 
 # Harness- or vendor-specific tokens that must not appear in the shared contract.
@@ -98,32 +100,32 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
 
     def test_shared_contract_keeps_authority_boundaries(self):
         for phrase in (
-            "## Candidate improvement",
-            "## Privacy and scope",
+            "Treat agent-proposed skills",
+            "Private notes, raw sessions",
             "verified, awaiting authorized commit",
             "require user authorization",
             "Never clean a dirty worktree",
         ):
             self.assertIn(phrase, self.text)
 
-    def test_shared_contract_keeps_skill_routing(self):
-        for token in ("## Skill workflow routing", "`ask-pocock`", "`ask-matt`"):
-            self.assertIn(token, self.text)
+    def test_shared_contract_avoids_mandatory_workflow_chains(self):
+        for token in ("`ask-matt`", "find-animation-opportunities"):
+            self.assertNotIn(token, self.text)
 
     def test_opencode_adapter_does_not_duplicate_shared_routing(self):
         adapter = OPENCODE_ADAPTER.read_text(encoding="utf-8")
-        for token in ("## Skill workflow routing", "`ask-pocock`", "`ask-matt`", "Kasa", "orkestra"):
+        for token in ("## Skills and workflows", "find-animation-opportunities", "`ask-matt`", "Kasa", "orkestra"):
             self.assertNotIn(token, adapter)
         self.assertIn("## OpenCode specifics", adapter)
 
     def test_omp_appendix_does_not_duplicate_shared_routing(self):
         appendix = OMP_ONLY.read_text(encoding="utf-8")
-        for token in ("## Skill workflow routing", "`ask-pocock`", "`ask-matt`"):
+        for token in ("## Skills and workflows", "`ask-pocock`", "`ask-matt`"):
             self.assertNotIn(token, appendix)
-
     def test_omp_symlinks_resolve_to_repo(self):
         self.assertEqual(OMP_AGENTS_LINK.resolve(), SHARED.resolve())
         self.assertEqual(OMP_APPENDIX_LINK.resolve(), OMP_ONLY.resolve())
+        self.assertEqual(OMP_RULES_LINK.resolve(), RULES.resolve())
 
     def test_opencode_config_loads_one_shared_contract(self):
         config = json.loads(OPENCODE_CONFIG.read_text(encoding="utf-8"))
@@ -167,7 +169,7 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
             "publish --check",
             "publish: true",
             "policy.toml",
-            "Tek yazıcı",
+            "git commit --only",
             "köken",
             "öneridir",
             "orkestra.md",

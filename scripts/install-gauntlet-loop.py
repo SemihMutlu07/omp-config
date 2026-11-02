@@ -17,10 +17,10 @@ def rule_block(home):
     return f"""{START}
 ## Default verification loop
 
-- For top-level implementation, bug fixes, scripts, or executable configuration changes, automatically read and use `gauntlet-loop` at `{skill}` (OMP may read `skill://gauntlet-loop`). A short user request is enough; recover the current context and derive the compact spec without asking for a long prompt or a slash command.
-- Follow spec → implement → self-check → independent review → relevant automated/runtime checks → bounded repair. Use the active harness's native tools and existing model/role/concurrency settings. Assigned workers and reviewers perform only their bounded subtask; they do not recursively start the parent loop.
-- Allow at most two repair rounds per task. Missing essential tools or independent review, a scope/product/cost decision, or repeated failure requires an explicit BLOCKED/PARTIAL handoff. Never report a skipped check or self-review as independent PASS.
-- Independent review requires the actual reviewer session/task identity and its returned result; an empty wait or the implementer's assertion is not evidence.
+- For top-level implementation, bug fixes, scripts, or executable configuration changes, automatically read and use `gauntlet-loop` at `{skill}`. A short user request is enough; recover current context and derive the compact spec without asking for a long prompt or a slash command.
+- Follow spec → implement → self-check → proportionate review and checks → bounded repair. Require independent review for cross-component behavior changes, security or data boundaries, migrations, or when explicitly requested. Small, reversible changes receive relevant checks.
+- Allow at most two repair rounds per task. Missing essential tools or required independent review, a scope/product/cost decision, or repeated failure requires an explicit BLOCKED/PARTIAL handoff. Never report a skipped check or self-review as independent PASS.
+- When independent review is required, record the actual reviewer session/task identity and its returned result; an empty wait or the implementer's assertion is not evidence.
 - Read-only questions, research, and plan-only requests do not initiate implementation. Honor user stop immediately. Evidence must match the current changes; a final PASS means ready for review and does not grant commit, push, deployment, or publication permission.
 - This is the default workflow for active sessions, not a background scheduler or a claim of an untested runtime gate. New sessions load changed global guidance; existing sessions are not assumed to have reloaded it.
 {END}"""
