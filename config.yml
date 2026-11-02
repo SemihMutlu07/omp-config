@@ -44,6 +44,9 @@ startup:
 defaultThinkingLevel: xhigh
 enabledModels:
   - google-antigravity/gemini-3.8-flash
+  - openai-codex/gpt-6.1-sol
+  - openai-codex/gpt-6-astra
+  - openai-codex/gpt-6-luna
   - xai-oauth/grok-4.7
   - anthropic/claude-haiku-5-5
   - anthropic/claude-sonnet-5-5
@@ -51,6 +54,7 @@ enabledModels:
   - deepseek/deepseek-v4-pro
 modelProviderOrder:
   - google-antigravity
+  - openai-codex
   - anthropic
   - xai-oauth
   - xai
@@ -141,3 +145,4 @@ compaction:
     anthropic/claude-opus-5-5: f120000
     anthropic/claude-sonnet-5-5: f150000
     anthropic/claude-haiku-5-5: f90000
+    openai-codex/*: f150000
