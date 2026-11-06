@@ -170,6 +170,29 @@ The affected names are `cloudflare`, `cloudflare-observability`,
 No Cloudflare credentials or server definitions were changed.
 ---
 
+## Read-only Kasa reports
+
+Run reports manually; they install no hook, timer, or background writer.
+
+```bash
+python3 scripts/kasa-repeats.py --root ~/Kasa --since 2026-11-01 --json
+python3 scripts/kasa-yesterday.py --root ~/Kasa --date 2026-11-05
+```
+
+`kasa-repeats.py` reads only session-header lines. It reports ISO-week keys
+(first 40 normalized characters) repeated at least three times, plus nudge
+counts. Keys are text excerpts, not anonymized data; keep reports local.
+It does not prove a reduction in repeated requests without comparable weeks.
+
+`kasa-yesterday.py` prints at most 12 Turkish lines: dated commit counts,
+up to five non-session commit subjects, latest handoff age, failed user units,
+and layer-check FAIL/WARN counts. Unavailable probes print `ölçülemedi`.
+It does not create a task ledger or replace the Notion task board.
+
+```bash
+python3 -m unittest tests.test_kasa_repeats tests.test_kasa_yesterday
+```
+
 ## 📁 Dosya ve Dizin Haritası
 
 ```
