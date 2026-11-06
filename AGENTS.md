@@ -50,6 +50,16 @@
 - Notion procedures apply when the requested work involves Notion. Notion is not a blocking prerequisite for local work.
 - When handling Notion tasks, use existing records, search before creating, update assigned cards, and verify writes with a fresh read. If Notion access is unavailable, continue local work and preserve pending updates.
 
+## Doğrulama ve tekrar etmeme
+
+1. Bitti demeden önce komutu çalıştır; komutu ve çıktısını göster. Dosyayı okuyarak incelemek kanıt değildir.
+2. Aynı düzeltmeyi ikinci kez yapıyorsan bunu kalıcı kontrole çevir: skill, şema veya betik.
+3. Semih bir isteği ikinci kez söylerse önce `$KASA_ROOT` ve KARARLAR içinde eski kaydı bul. "Bunu şu tarihte istedin, durumu şu" de.
+4. Geçmiş kararı sormadan önce KARARLAR `[AKTİF]` satırlarına, son devir notuna ve Notion kartlarına bak.
+5. İşe amacını tek cümleyle yazarak başla. Otomatik kontrol mümkünse kontrolle uygula.
+6. Niyetin birincil kaynağı Semih'in kendi sözleridir (dikte ve elle yazılmış metin). Karardan önce ilk isteği ve düzeltmeleri tarih, yol ve en çok 15 kelimelik alıntıyla bul. Ajan özeti veya kart, sözün yerine geçmez. Çelişkide en güncel söz kazanır. Kaynağa erişemiyorsan söyle; okumuş gibi yapma ve tekrar anlattırma.
+7. KARARLAR `[AKTİF]` satırları Notion kartlarındaki sınır listelerinden üstündür. Çelişki görürsen karara uy ve çelişkiyi raporla.
+
 ## Harness split
 
 - This file is the shared contract for every harness. It stays harness-neutral: no tool names, slash commands, model IDs, or provider routing. It names harnesses only to locate their adapters: for OMP, `~/dev/omp-config/APPEND_SYSTEM.md` and `config.yml`; for OpenCode, `~/.config/opencode/`.
