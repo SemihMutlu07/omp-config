@@ -94,6 +94,7 @@ retry:
     vision:
       - xai-oauth/grok-4.7
     image: []
+  waitForUsageReset: true
 skills:
   customDirectories: []
   enableAgentsProject: false
