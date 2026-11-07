@@ -18,6 +18,16 @@
 - Distinguish human decisions and original notes from agent proposals or classifications.
 - On handoff, record the verified result, evidence location, blocker, and next action.
 
+## Turn close
+
+- A turn that changed something ends with exactly these three lines, labels at line start and literal in any language:
+  `Yaptım: <what changed>`
+  `Kanıt: <command run, file, or output>`
+  `Sırada: <next concrete step; "yok" when the work is finished>`
+- No proof available: write `Kanıt: doğrulanmadı` and do not call the work done.
+- Do not copy these lines into the handoff file yourself; the closing writer records them automatically.
+- Do not ask "devam edeyim mi?" for a reversible step. Do it, prove it, close.
+
 ## Durable memory
 
 - Durable decisions and handoffs live in the user's notes vault (`$KASA_ROOT`; default is the vault directory in the home directory). A harness's own memory is a cache. If they conflict, the vault and the user's current words win.

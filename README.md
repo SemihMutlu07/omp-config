@@ -2,6 +2,16 @@
 
 Bu depo, **OMP (oh-my-pi)** geliştirici ortamı, model rolleri, retry zincirleri, kurallar (`AGENTS.md`), özel yetenekler (skills) ve eklentileri (extensions) cihazlar arasında (özellikle dizüstü `omarchy` ve masaüstü `omarchy-1`) tutarlı ve güvenli şekilde senkronize etmek için oluşturulmuştur.
 
+## Görünüm ve çalışma takibi
+
+`config.yml` açık/koyu tema seçimini ve `band` composer'ı korur. Özel durum
+satırı solda model, mod, klasör, Git ve PR; sağda maliyet ve bağlam gösterir.
+Saydam arka plan ve `pipe` ayırıcı kullanılır; Markdown renk çeşitliliği ve
+hareket azaltılmıştır. Yanıt süresi, alt ajan canlı önizlemesi ve hata
+bildirimi açıktır. Bunlar yerleşik OMP ayarlarıdır; yeni eklenti gerektirmez.
+Gerçek görünüm `/settings` → Appearance içinde denetlenebilir. Mevcut
+`Alt+S` / `/cockpit` snippet ve skill menüsü değişmemiştir.
+
 ---
 
 ## 🏗 Mimari ve Durum Ayrımı (State Separation)
@@ -207,6 +217,8 @@ omp-config/
 ├── extensions/             # OMP eklentileri
 │   ├── herdr-omp-agent-state.ts # Herdr orkestrasyon entegrasyonu
 │   ├── bash-guard/         # Bash komut güvenlik filtresi
+│   ├── kasa-context/       # Kasa kararları ve son devri oturum başına enjekte eder
+│   ├── kasa-handoff/       # Tur kapanışını günlük devir dosyasına yazar
 │   └── prompt-snippets/    # Hızlı komut ve snippet kütüphanesi
 └── skills/                 # Yalnız OMP'ye özel skill kaynakları; paylaşılan depo bunlara link verir
     ├── ask-pocock/
