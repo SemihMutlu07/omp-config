@@ -102,7 +102,7 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
         for phrase in (
             "Treat agent-proposed skills",
             "Private notes, raw sessions",
-            "verified, awaiting authorized commit",
+            "Git commits and pushes do not",
             "require user authorization",
             "Never clean a dirty worktree",
         ):

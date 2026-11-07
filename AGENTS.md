@@ -38,8 +38,9 @@
 
 - Protect secrets and preserve user data. Back up configuration before substantial rewrites and record the backup path. Avoid broad destructive commands.
 - Never clean a dirty worktree with automatic stash, reset, checkout, or pull. Inspect the change, name its likely owner, and leave it in place.
-- Publication, deployment, external messages, purchases, destructive operations, and Git commits or pushes require user authorization. A project contract can grant standing authorization for commits and pushes to its own repository. Verified work without commit authorization is `verified, awaiting authorized commit`.
+- Publication, deployment, external messages, purchases, and destructive operations require user authorization. Git commits and pushes do not: make them, then report the hash. History and backups are the recovery path.
 - Do not interrupt or restart unrelated sessions. Avoid simultaneous edits to the same files or worktree.
+- Own the lifecycle of temporary sessions you open for helper work. Record their identifiers, collect and report the result, then close their processes and tabs before finishing; verify they are closed and preserve saved history. Do not treat an idle session as closed. Leave user-owned or unrelated sessions alone; keep a helper session open only when the user asks, work is still running, or a handoff needs it. Report any session you cannot safely close.
 - Do not change models, provider routing, credentials, or paid usage settings unless authorized.
 - Treat agent-proposed skills, memories, rules, or automations as candidates; promote them only with user approval.
 - Private notes, raw sessions, credentials, and sensitive derived data stay local. Semih's personal Notion pages (jobs, daily pages, Benim Alanım, original note text) are read-only unless explicitly authorized.
@@ -47,6 +48,7 @@
 ## Skills and workflows
 
 - Select relevant available skills when they help the task; read the skill's `SKILL.md` first. Do not force unnecessary skill chains or install missing skills without authorization.
+- For a new idea, feature, customization, or workflow request, use `research-before-build` without waiting for a separate research instruction. Check current examples and primary sources, show suitable options (with visuals for UI work), then agree on what to adapt before implementation. Skip this discovery phase for a fixed, already chosen change, an ordinary bug fix, or an explicit request not to research.
 - Notion procedures apply when the requested work involves Notion. Notion is not a blocking prerequisite for local work.
 - When handling Notion tasks, use existing records, search before creating, update assigned cards, and verify writes with a fresh read. If Notion access is unavailable, continue local work and preserve pending updates.
 
