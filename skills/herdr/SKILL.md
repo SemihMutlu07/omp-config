@@ -194,6 +194,18 @@ Use `--format ansi` when colors and terminal styling are evidence. Otherwise use
 
 After that failed read, ask the agent to write its complete response as Markdown in a temporary directory and reply only with the file path, then read the file directly. Use this only as a fallback; do not request file output in the initial prompt.
 
+## Recover lost omp sessions (herdr-app)
+
+When tabs or spaces were closed, a layout change dropped them, or the PC rebooted, do not rebuild them by hand. The terminal records in `~/.omp/agent/herdr-terminals/*.json` survive every cause:
+
+```bash
+python3 ~/dev/omp-config/scripts/herdr-reopen-journal.py lost --since 17:30            # list dead sessions
+python3 ~/dev/omp-config/scripts/herdr-reopen-journal.py restore --since 3h            # dry run
+python3 ~/dev/omp-config/scripts/herdr-reopen-journal.py restore --since 3h --apply    # reopen as omp --resume tabs
+```
+
+`--since` takes `HH:MM`, `Nh`, or `YYYY-MM-DD[THH:MM]`. Live sessions are skipped, so a second run does not duplicate tabs. `--space NAME` puts all restored tabs in one space; `--limit N` caps the count.
+
 ## Safety and coordination rules
 
 - Use `--no-focus` for background work unless the user asked to switch context.
