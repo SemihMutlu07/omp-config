@@ -24,7 +24,7 @@ function retrieve(prompt: string, cwd: string, sessionStart: boolean): Promise<R
 		try {
 			const result: Reference = JSON.parse(stdout);
 			if (result.status === "unavailable" || (!error && typeof result.content === "string"
-				&& Buffer.byteLength(result.content, "utf8") <= 8000 && Array.isArray(result.paths))) {
+				&& Buffer.byteLength(result.content, "utf8") <= 9000 && Array.isArray(result.paths))) {
 				resolve(result);
 				return;
 			}
