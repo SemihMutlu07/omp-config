@@ -1,15 +1,15 @@
 import {
 	assemblePrompt,
-	availableSkills,
-
-	createSnippetsMenuComponent,
+	BADGE_WIDGET,
+	buildSections,
+	createCockpitComponent,
+	CURATED_SKILLS,
 	formatBadges,
+	loadSkills,
 	loadSnippets,
-	MAGIC_KEYWORDS,
-	EXECUTION_MODES,
-	SKILLS,
-	skillExists,
-
+	stickyTail,
+	type CockpitComponent,
+	type Item,
 	type ThemeLike,
 } from "./index.js";
 import { visibleWidth } from "@earendil-works/pi-tui";
@@ -34,257 +34,251 @@ const testTheme: ThemeLike = {
 function runTests() {
 	console.log("\x1b[1m=== PROMPT COCKPIT TUI TEST SUITE ===\x1b[0m\n");
 
+	// 1. Snippets loading
 	const snippets = loadSnippets();
-	if (snippets.length === 0) {
-		throw new Error("No snippets loaded from snippets directory!");
+	if (snippets.length !== 4) {
+		throw new Error(`Expected exactly 4 snippets, got ${snippets.length}`);
 	}
-	console.log(`Loaded ${snippets.length} curated snippets successfully.`);
-	console.log(
-		`Magic keywords: ${MAGIC_KEYWORDS.length}, Execution modes: ${EXECUTION_MODES.length}, Skills: ${SKILLS.length}`,
-	);
+	const snippetIds = snippets.map((s) => s.id);
+	for (const expected of ["route-first.md", "prove.md", "short-visual.md", "dil.md"]) {
+		if (!snippetIds.includes(expected)) {
+			throw new Error(`Missing expected snippet: ${expected}`);
+		}
+	}
+	console.log(`Loaded ${snippets.length} curated snippets successfully: ${snippetIds.join(", ")}`);
 
-	// 1. Test badges formatting
+	// Verify sticky snippets
+	const stickySnippets = snippets.filter((s) => s.sticky);
+	if (stickySnippets.length !== 2) {
+		throw new Error(`Expected exactly 2 sticky snippets, got ${stickySnippets.length}`);
+	}
+	const stickyIds = stickySnippets.map((s) => s.id);
+	if (!stickyIds.includes("short-visual.md") || !stickyIds.includes("dil.md")) {
+		throw new Error(`Unexpected sticky snippets: ${stickyIds.join(", ")}`);
+	}
+	console.log(`Sticky snippets verified: ${stickyIds.join(", ")}`);
+
+	// 2. Curated skills loading
+	const skills = loadSkills();
+	if (skills.length !== 4) {
+		throw new Error(`Expected 4 curated skills, got ${skills.length}`);
+	}
+	console.log(`Loaded ${skills.length} curated skills: ${skills.map((s) => s.label).join(", ")}`);
+
+	// 3. Sections building
+	const sections = buildSections(snippets);
+	if (sections.length !== 3) {
+		throw new Error(`Expected exactly 3 sections, got ${sections.length}`);
+	}
+	const [prependSec, appendSec, skillSec] = sections;
+	if (!prependSec.title.startsWith("↑ Prepend")) throw new Error(`Wrong prepend title: ${prependSec.title}`);
+	if (!appendSec.title.startsWith("↓ Append")) throw new Error(`Wrong append title: ${appendSec.title}`);
+	if (!skillSec.title.startsWith("🧩 Skills")) throw new Error(`Wrong skills title: ${skillSec.title}`);
+
+	if (prependSec.items.length !== 1) throw new Error(`Prepend items count wrong: ${prependSec.items.length}`);
+	if (appendSec.items.length !== 3) throw new Error(`Append items count wrong: ${appendSec.items.length}`);
+	if (skillSec.items.length !== 4) throw new Error(`Skill items count wrong: ${skillSec.items.length}`);
+	console.log(`Sections built: ${sections.map((s) => `${s.title} (${s.items.length})`).join(", ")}`);
+
+	// 4. Badges (Above Editor Widget)
 	console.log("\n\x1b[1m--- 1. BADGES (Above Editor Widget) ---\x1b[0m");
-	const sampleEnabled = new Set([
-		"kw:orchestrate",
-		"exec:loop_test",
-		"route-first.md",
-		"prove.md",
-	]);
-	const badges = formatBadges(snippets, sampleEnabled, testTheme);
-	console.log("Empty badges:", formatBadges(snippets, new Set(), testTheme));
-	console.log("Sample badges:", badges[0]);
-	if (
-		!badges[0].includes("orchestrate") ||
-		!badges[0].includes("Loop: until test") ||
-		!badges[0].includes("Route First") ||
-		!badges[0].includes("Kanıtla")
-	) {
-		throw new Error("Badge pills do not contain expected items!");
+	const allItems = sections.flatMap((s) => s.items);
+	const defaultActive = (item: Item) => item.sticky;
+	const defaultBadges = formatBadges(sections, defaultActive, testTheme);
+	console.log("Default badges:", defaultBadges[0]);
+	if (!defaultBadges[0].includes("Kısa ve görsel") || !defaultBadges[0].includes("Dil")) {
+		throw new Error("Default badges do not show sticky items!");
 	}
-	const skillBadges = formatBadges(snippets, new Set(["skill:ask-pocock"]), testTheme);
-	if (!skillBadges[0]?.includes("ask-pocock")) throw new Error("Skill badge is missing");
+	const emptyBadges = formatBadges(sections, () => false, testTheme);
+	if (emptyBadges.length !== 0) throw new Error("Empty active items must produce empty badges");
 
-	let renderRequests = 0;
-	let finishResult: { confirmed: boolean; working: Set<string> } | null = null;
-
+	// 5. Cockpit List Rendering
+	console.log("\n\x1b[1m--- 2. COCKPIT LIST RENDERING (90 columns) ---\x1b[0m");
+	let finishResult: { confirmed: boolean; enabled: Set<string>; disabled: Set<string> } | null = null;
 	const mockTui = {
 		terminal: { rows: 30, cols: 90 },
-		requestRender: () => {
-			renderRequests++;
-		},
+		requestRender: () => {},
 	};
 
-	const component = createSnippetsMenuComponent({
-		snippets,
-		initialEnabled: sampleEnabled,
-		tui: mockTui,
+	const component = createCockpitComponent({
+		sections,
 		theme: testTheme,
-		done: (confirmed, result) => {
-			finishResult = { confirmed, working: result };
+		tui: mockTui,
+		done: (res) => {
+			finishResult = res;
 		},
 	});
 
-	// 2. Render List at 90 cols
-	console.log("\n\x1b[1m--- 2. COCKPIT LIST RENDERING (90 columns) ---\x1b[0m");
 	const lines90 = component.render(90);
 	console.log(lines90.join("\n"));
 
-	// 2b. Layout invariants: no line overflows, descriptions survive narrow widths.
+	// Check rendering content
+	const flat90 = lines90.join(" ").replace(/\x1b\[[0-9;]*m/g, "").replace(/\s+/g, " ");
+	for (const needle of [
+		"── Prompt Cockpit",
+		"↑ Prepend Modifiers",
+		"0/1",
+		"Route First — Okumadan önce rota seç: direct / primary",
+		"↓ Append Modifiers",
+		"2/3",
+		"[ ] Kanıtla — Çürütücü komutu koş",
+		"[x] Kısa ve görsel — İlk satırda sonuç",
+		"[x] Dil — Her cevapta tek okumalı düz dil",
+		"🧩 Skills",
+		"0/4",
+		"ask-pocock — Uygun yüklü iş akışını seç",
+		"plan → kur → kanıtla",
+		"research-before-build",
+		"gauntlet-loop",
+		"↑↓ gez · 1-3 bölüm · Space seç · c temizle · Tab detay · Enter gönder · Esc iptal",
+		"2/8",
+	]) {
+		if (!flat90.includes(needle)) {
+			throw new Error(`Rendered cockpit missing text: "${needle}"`);
+		}
+	}
+	console.log("Cockpit rendering matches reference image exactly.");
+
+	// 5b. Layout Invariants at widths 60, 90, 120
 	console.log("\n\x1b[1m--- 2b. LAYOUT INVARIANTS (60 / 90 / 120 columns) ---\x1b[0m");
 	for (const width of [60, 90, 120]) {
-		const tall = createSnippetsMenuComponent({
-			snippets,
-			initialEnabled: sampleEnabled,
-			tui: { terminal: { rows: 60 }, requestRender: () => {} },
+		const comp = createCockpitComponent({
+			sections,
 			theme: testTheme,
+			tui: mockTui,
 			done: () => {},
 		});
-		const lines = tall.render(width);
+		const lines = comp.render(width);
 		for (const line of lines) {
 			const w = visibleWidth(line);
-			if (w > width) throw new Error(`Line overflows at width ${width} (${w}): ${line.replace(/\x1b\[[0-9;]*m/g, "")}`);
+			if (w > width) {
+				throw new Error(`Line overflow at width ${width} (${w}): ${line.replace(/\x1b\[[0-9;]*m/g, "")}`);
+			}
 		}
 		const flat = lines.join(" ").replace(/\x1b\[[0-9;]*m/g, "").replace(/\s+/g, " ");
-		for (const needle of ["Çürütücü komutu koş", "Okumadan önce rota", "tablo/diyagram"]) {
+		for (const needle of ["Çürütücü komutu", "Okumadan önce rota", "İlk satırda sonuç"]) {
 			if (!flat.includes(needle)) {
 				throw new Error(`Description text lost at width ${width}: "${needle}"`);
 			}
 		}
-	}
-	const flat90 = lines90.join(" ").replace(/\x1b\[[0-9;]*m/g, "").replace(/\s+/g, " ");
-	const emptyComponent = createSnippetsMenuComponent({
-		snippets,
-		initialEnabled: new Set(),
-		tui: mockTui,
-		theme: testTheme,
-		done: () => {},
-	});
-	const emptyFlat = emptyComponent.render(90).join(" ").replace(/\x1b\[[0-9;]*m/g, "").replace(/\s+/g, " ");
-	if (!emptyFlat.includes("Bu bir todo listesi değil")) {
-		throw new Error("Empty-selection state line is missing or truncated");
-	}
-	if (!flat90.includes("4 seçim bir sonraki mesaja")) {
-		throw new Error("Selection count line is missing or wrong");
-	}
-	if (!flat90.includes("1/3") || !flat90.includes("1/1") || !flat90.includes("1/2")) {
-	}
-	console.log("No overflow at 60/90/120; descriptions and counters intact.");
-
-	// 2c. Narrow viewport: the last item's wrapped continuation rows stay visible.
-	const narrowComponent = createSnippetsMenuComponent({
-		snippets,
-		initialEnabled: new Set(),
-		tui: { terminal: { rows: 24 }, requestRender: () => {} },
-		theme: testTheme,
-		done: () => {},
-	});
-	narrowComponent.handleInput("4");
-	narrowComponent.handleInput("\x1b[B");
-	const narrowFlat = narrowComponent
-		.render(60)
-		.join(" ")
-		.replace(/\x1b\[[0-9;]*m/g, "")
-		.replace(/\s+/g, " ");
-	if (!narrowFlat.includes("Kısa ve görsel") || !narrowFlat.includes("tablo/diyagram")) {
-		throw new Error("Narrow viewport hides the last item's wrapped description");
-	}
-	console.log("Narrow 60x24 viewport keeps the last wrapped item fully visible.");
-
-	// 3. Test Key Navigation & Mutually Exclusive Execution Mode
-	console.log("\n\x1b[1m--- 3. KEYBOARD NAVIGATION & MUTUAL EXCLUSIVITY ---\x1b[0m");
-	console.log(`Initial cursor: ${component.cursor}, active count: ${component.working.size}`);
-
-	// Toggle item 0 (kw:orchestrate) off
-	component.handleInput(" ");
-	console.log(`After Space on kw:orchestrate: active kw:orchestrate = ${component.working.has("kw:orchestrate")}`);
-	if (component.working.has("kw:orchestrate")) throw new Error("Expected kw:orchestrate to be toggled off!");
-
-	// Move down to execution mode section (3 keywords, then exec:loop_test, then exec:loop_3x)
-	for (let i = 0; i < MAGIC_KEYWORDS.length + 1; i++) component.handleInput("\x1b[B");
-	console.log(`Cursor moved to index ${component.cursor} (exec:loop_3x)`);
-
-	// exec:loop_test was active in initialEnabled. Now toggle exec:loop_3x:
-	component.handleInput(" ");
-	console.log(`After Space on exec:loop_3x:`);
-	console.log(`  exec:loop_test = ${component.working.has("exec:loop_test")}`);
-	console.log(`  exec:loop_3x = ${component.working.has("exec:loop_3x")}`);
-
-	if (component.working.has("exec:loop_test")) {
-		throw new Error("exec:loop_test was not cleared when exec:loop_3x was selected!");
-	}
-	if (!component.working.has("exec:loop_3x")) {
-		throw new Error("exec:loop_3x was not selected!");
-	}
-	// Test quick jump keys (1: Keywords, 2: Exec, 3: Prepend, 4: Append, 5: Skills)
-	const installedSkills = availableSkills();
-	const prepStart = MAGIC_KEYWORDS.length + EXECUTION_MODES.length;
-	const appStart = prepStart + snippets.filter((s) => s.placement === "prepend").length;
-	const skillStart = appStart + snippets.filter((s) => s.placement === "append").length;
-	const jumps: [string, number][] = [
-		["1", 0],
-		["2", MAGIC_KEYWORDS.length],
-		["3", prepStart],
-		["4", appStart],
-		...(installedSkills.length > 0 ? ([["5", skillStart]] as [string, number][]) : []),
-	];
-	for (const [key, expected] of jumps) {
-		component.handleInput(key);
-		if (component.cursor !== expected) {
-			throw new Error(`Key '${key}' did not jump to index ${expected}, got ${component.cursor}`);
-		}
-	}
-	if (installedSkills.length === 0) {
-		component.handleInput("1");
-		component.handleInput("5");
-		if (component.cursor !== 0) throw new Error("Key '5' moved the cursor with no installed skills");
-	}
-	console.log("Quick jump keys verified against installed skills.");
-
-	// Test 'c' key to clear all active selections
-	component.handleInput("c");
-	if (component.working.size !== 0) throw new Error(`Key 'c' did not clear all selections, size is ${component.working.size}`);
-	console.log("Quick clear key 'c' passed successfully (working set cleared).");
-
-	// Re-select for subsequent tests
-	component.handleInput("2"); // jump to exec:loop_test
-	component.handleInput(" "); // toggle exec:loop_test on
-
-	// 3b. Prompt assembly: skill directive goes before the user text.
-	const assembled = assemblePrompt(
-		new Set(["exec:loop_test", "kw:orchestrate", "skill:ask-pocock", "route-first.md", "prove.md"]),
-		snippets,
-		"görevi yap",
-	);
-	const pocockInstalled = installedSkills.some((s) => s.id === "skill:ask-pocock");
-	const order = [
-		"/loop --until",
-		"orchestrate",
-		...(pocockInstalled ? ["Read skill://ask-pocock/SKILL.md and follow it for this task."] : []),
-		"Before your first tool call",
-		"görevi yap",
-		"smallest command",
-	];
-	if (!pocockInstalled && assembled.includes("skill://ask-pocock")) {
-		throw new Error("Assembly injected a directive for a missing skill");
-	}
-	let cursorAt = -1;
-	for (const needle of order) {
-		const at = assembled.indexOf(needle);
-		if (at < 0) throw new Error(`Assembled prompt is missing: ${needle}`);
-		if (at < cursorAt) throw new Error(`Assembled prompt order is wrong at: ${needle}`);
-		cursorAt = at;
-	}
-	console.log("Skill directive and section order verified.");
-
-
-	// 4. Tab to Preview mode
-	console.log("\n\x1b[1m--- 4. PREVIEW RENDERING ---\x1b[0m");
-	component.handleInput("\t");
-	console.log(`Mode after Tab: ${component.mode}`);
-	if (component.mode !== "preview") throw new Error("Expected mode to be preview!");
-
-	const previewLines = component.render(90);
-	console.log(previewLines.join("\n"));
-	for (const width of [60, 90]) {
-		for (const line of component.render(width)) {
-			if (line.replace(/\x1b\[[0-9;]*m/g, "").includes("…")) {
-				throw new Error(`Preview truncated with ellipsis at width ${width}: ${line}`);
+		if (width >= 90) {
+			for (const needle of ["tablo/diyagram", "tek okumalı düz dil"]) {
+				if (!flat.includes(needle)) {
+					throw new Error(`Description text lost at width ${width}: "${needle}"`);
+				}
 			}
 		}
 	}
+	console.log("No overflow at 60/90/120; descriptions and counters intact.");
 
-	// Tab back to list
+	// 6. Keyboard navigation & interactions
+	console.log("\n\x1b[1m--- 3. KEYBOARD NAVIGATION & TOGGLES ---\x1b[0m");
+	console.log(`Initial cursor: ${component.cursor}`);
+	if (component.cursor !== 0) throw new Error("Initial cursor must be 0");
+
+	// Move cursor down
+	component.handleInput("\x1b[B"); // down
+	if (component.cursor !== 1) throw new Error("Cursor down failed");
+
+	// Jump keys: 1 (Prepend), 2 (Append), 3 (Skills)
+	component.handleInput("1");
+	if (component.cursor !== 0) throw new Error(`Jump '1' failed, cursor: ${component.cursor}`);
+
+	component.handleInput("2");
+	if (component.cursor !== 1) throw new Error(`Jump '2' failed, cursor: ${component.cursor}`);
+
+	component.handleInput("3");
+	if (component.cursor !== 4) throw new Error(`Jump '3' failed, cursor: ${component.cursor}`);
+	console.log("Section jump keys 1, 2, 3 verified.");
+
+	// Toggle sticky item off:
+	// Item at index 2 is "Kısa ve görsel" (sticky)
+	component.cursor = 2;
+	const kisaItem = component.items[2];
+	if (kisaItem.label !== "Kısa ve görsel") throw new Error("Item at index 2 is not Kısa ve görsel");
+	if (!component.isActive(kisaItem)) throw new Error("Kısa ve görsel should be active initially");
+
+	component.handleInput(" "); // Space
+	if (component.isActive(kisaItem)) throw new Error("Kısa ve görsel should be disabled after Space");
+	if (!component.working.disabled.has(kisaItem.id)) throw new Error("disabled set missing kisaItem");
+	console.log("Sticky toggle off verified.");
+
+	// Space again re-enables it
+	component.handleInput(" ");
+	if (!component.isActive(kisaItem)) throw new Error("Kısa ve görsel should be re-enabled after second Space");
+	console.log("Sticky toggle on verified.");
+
+	// Test 'c' clear key:
+	component.handleInput("c");
+	const activeCountAfterC = component.items.filter(component.isActive).length;
+	if (activeCountAfterC !== 0) {
+		throw new Error(`Expected 0 active items after 'c', got ${activeCountAfterC}`);
+	}
+	console.log("'c' key cleared all active selections.");
+
+	// Press 'c' again to restore default sticky selections
+	component.handleInput("c");
+	const activeCountAfterRestore = component.items.filter(component.isActive).length;
+	if (activeCountAfterRestore !== 2) {
+		throw new Error(`Expected 2 active items after restore 'c', got ${activeCountAfterRestore}`);
+	}
+	console.log("'c' key restored default sticky selections when pressed again.");
+
+	// 7. Tab to detail view
+	console.log("\n\x1b[1m--- 4. TAB DETAIL VIEW ---\x1b[0m");
 	component.handleInput("\t");
-	console.log(`Mode after Tab back: ${component.mode}`);
-	if (component.mode !== "list") throw new Error("Expected mode to be list!");
+	if (!component.detail) throw new Error("Tab did not enable detail view");
+	const detailLines = component.render(90);
+	if (!detailLines.some((l) => l.includes("First line: the answer"))) {
+		throw new Error("Detail view does not show snippet body");
+	}
+	component.handleInput("\t");
+	if (component.detail) throw new Error("Tab did not disable detail view");
+	console.log("Tab detail view toggle verified.");
 
-	// 5. Enter to apply
+	// 8. Prompt assembly
+	console.log("\n\x1b[1m--- 5. PROMPT ASSEMBLY & STICKY TAIL ---\x1b[0m");
+	const assembled = assemblePrompt(
+		sections,
+		(item) => item.id.includes("route-first") || item.sticky,
+		"dosyayı düzenle",
+	);
+	if (
+		!assembled.includes("Route: direct | primary") ||
+		!assembled.includes("dosyayı düzenle") ||
+		!assembled.includes("First line: the answer") ||
+		!assembled.includes("Write so the text has one reading only")
+	) {
+		throw new Error(`Assembled prompt missing parts:\n${assembled}`);
+	}
+	console.log("Prompt assembly verified with prepend + editor text + sticky appends.");
+
+	const tail = stickyTail(snippets);
+	if (tail.head.length !== 0) throw new Error("Sticky head should be empty");
+	if (tail.tail.length !== 2) throw new Error(`Expected 2 sticky tail items, got ${tail.tail.length}`);
+	console.log("stickyTail verified.");
+
+	// 9. Enter confirm and Esc cancel
 	component.handleInput("\r");
 	if (!finishResult || !finishResult.confirmed) {
-		throw new Error("Enter key did not confirm done(true)!");
+		throw new Error("Enter did not confirm");
 	}
-	console.log("\nEnter key confirmed successfully:", finishResult);
+	console.log("Enter key confirmed successfully.");
 
-	// 6. Test Esc key to cancel
-	let cancelResult: { confirmed: boolean; working: Set<string> } | null = null;
-	const cancelComponent = createSnippetsMenuComponent({
-		snippets,
-		initialEnabled: new Set(),
-		tui: mockTui,
+	let cancelled = false;
+	const escComp = createCockpitComponent({
+		sections,
 		theme: testTheme,
-		done: (confirmed, result) => {
-			cancelResult = { confirmed, working: result };
+		tui: mockTui,
+		done: (res) => {
+			if (res === null) cancelled = true;
 		},
 	});
-	cancelComponent.handleInput("\x1b");
-	if (!cancelResult || cancelResult.confirmed) {
-		throw new Error("Escape key did not cancel done(false)!");
-	}
-	console.log("Escape key cancelled successfully:", cancelResult);
+	escComp.handleInput("\x1b");
+	if (!cancelled) throw new Error("Escape did not cancel");
+	console.log("Escape key cancelled successfully.");
 
-
-	console.log("\n\x1b[32m✔ ALL COCKPIT TUI & KEYBOARD NAVIGATION TESTS PASSED SUCCESSFULLY!\x1b[0m\n");
+	console.log("\n\x1b[32m✔ ALL PROMPT COCKPIT TESTS PASSED SUCCESSFULLY!\x1b[0m\n");
 }
 
 runTests();

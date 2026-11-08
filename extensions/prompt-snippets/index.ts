@@ -1,194 +1,80 @@
 /**
- * Prompt Cockpit — unified management of Magic Keywords, Execution Modes (Loop), and Snippets.
+ * Prompt Cockpit
  *
- * - Press alt+s or run /snippets to open the cockpit menu:
- *     - ⚡ Magic Keywords: OMP native modes (orchestrate, workflowz, jevify)
- *     - 🎯 Execution Modes: Loop (--until test, 3x)
- *     - ↑ Prepend Modifiers: Route First (direct / prewalk / primary / scout)
- *     - ↓ Append Modifiers: Kanıtla (verify + UI), Kısa ve görsel
- *     - 🧩 Skills: Curated skill launcher (ask-pocock, plan → kur → kanıtla combo, ...)
- * - Space: toggle (execution modes are mutually exclusive)
- * - Tab: preview details, command syntax, or snippet body
- * - Enter: apply selections
- * - Esc: cancel
+ * `alt+s` (or `/snippets` / `/cockpit`) opens a selector for prompt modifiers and skills,
+ * mirroring the Pi cockpit: ↑ prepend snippets, ↓ append snippets, 🧩 skills.
+ * Enter assembles the selections around whatever is already in the editor and
+ * sends it. Selections reset after sending, except snippets marked `sticky`
+ * in their frontmatter (`sticky: true`).
  *
- * Active selections appear as badge pills above the editor.
- * When sent, execution commands, magic keywords, skill directives, and snippets are assembled cleanly.
- * Toggles reset to off after each message and at session start.
+ * Snippet files live in ./snippets/*.md (or ~/.pi/agent/snippets/*.md).
+ * Frontmatter: name, description, placement (prepend|append), order, sticky.
  */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { homedir } from "node:os";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Key, matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import { matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
-export interface Snippet {
-	/** Filename, e.g. "plan-outline.md" */
+const defaultSnippetDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "snippets");
+export const SNIPPET_DIR = fs.existsSync(defaultSnippetDir)
+	? defaultSnippetDir
+	: path.join(os.homedir(), ".pi", "agent", "snippets");
+export const SKILL_ROOT = path.join(os.homedir(), ".agents", "skills");
+export const BADGE_WIDGET = "snippets-badges";
+
+export type Snippet = {
 	id: string;
 	name: string;
 	description: string;
 	placement: "prepend" | "append";
 	order: number;
+	sticky: boolean;
 	body: string;
-}
+};
 
-export interface MagicKeywordItem {
-	type: "keyword";
+export type Item = {
 	id: string;
-	keyword: string;
+	label: string;
+	hint: string;
+	body: string;
+	skills?: string[];
+	sticky: boolean;
+};
+
+export type Section = {
+	title: string;
+	color: "accent" | "warning" | "success";
+	items: Item[];
+};
+
+export type CuratedSkill = {
 	name: string;
+	label: string;
 	description: string;
-	detail: string;
-}
-
-export interface ExecutionModeItem {
-	type: "execution";
-	id: string;
-	name: string;
-	badge: string;
-	description: string;
-	commandPrefix: string;
-	detail: string;
-}
-
-export const MAGIC_KEYWORDS: MagicKeywordItem[] = [
-	{
-		type: "keyword",
-		id: "kw:orchestrate",
-		keyword: "orchestrate",
-		name: "orchestrate",
-		description: "Çoklu alt-ajan dağıtımı ve doğrulama",
-		detail: "OMP'nin yerleşik orchestrator sözleşmesini etkinleştirir. Görevleri alt-ajanlara böler, paralel dağıtır ve doğrular.",
-	},
-	{
-		type: "keyword",
-		id: "kw:workflowz",
-		keyword: "workflowz",
-		name: "workflowz",
-		description: "workpool ile uzman ajan yönlendirme",
-		detail: "OMP'nin yerleşik workflowz motorunu devreye sokar. workpool('scout') ve reviewer gibi uzman rolleri kullanır.",
-	},
-	{
-		type: "keyword",
-		id: "kw:jevify",
-		keyword: "jevify",
-		name: "jevify",
-		description: "judge_batch ile toplu sınıflandırma (judge rolü)",
-		detail: "Toplu verileri (diff, dosya, log) paralel sınıflandırır. Model config.yml'deki `modelRoles.judge` rolünden gelir. Rubrik önce dondurulur.",
-	},
-];
-
-export const EXECUTION_MODES: ExecutionModeItem[] = [
-	{
-		type: "execution",
-		id: "exec:loop_test",
-		name: "Loop: test geçene kadar",
-		badge: "Loop: until test",
-		description: "Test geçene kadar yineler",
-		commandPrefix: "/loop --until 'npm test' ",
-		detail: "Her yanıtın ardından arka planda test komutunu çalıştırır. Test başarılı olunca (exit 0) döngüyü durdurur. TDD için idealdir.",
-	},
-	{
-		type: "execution",
-		id: "exec:loop_3x",
-		name: "Loop: 3 tur",
-		badge: "Loop: 3x",
-		description: "İstemi 3 tur otomatik yineler",
-		commandPrefix: "/loop 3 ",
-		detail: "İstemi 3 kez peş peşe çalıştırır. Adım adım refactoring veya iteratif iyileştirme işlemlerinde kullanılır.",
-	},
-];
-
-export interface SkillItem {
-	type: "skill";
-	id: string;
-	skill: string;
-	/** Extra skills loaded together with `skill`, in order. */
 	also?: string[];
-	name: string;
-	description: string;
-	detail: string;
-}
+};
 
-export const SKILLS: SkillItem[] = [
+/** Curated skills, mirrors the cockpit list. Each name must exist on disk. */
+export const CURATED_SKILLS: CuratedSkill[] = [
+	{ name: "ask-pocock", label: "ask-pocock", description: "Uygun yüklü iş akışını seç" },
 	{
-		type: "skill",
-		id: "skill:ask-pocock",
-		skill: "ask-pocock",
 		name: "ask-pocock",
-		description: "Uygun yüklü iş akışını seç",
-		detail: "Yüklü beceri listesine bakar, göreve uyan workflow'u seçer. Eksik beceriyi kurmaz veya varsaymaz.",
-	},
-	{
-		type: "skill",
-		id: "skill:plan-build-prove",
-		skill: "ask-pocock",
-		also: ["grill-for-unknowns", "gauntlet-loop"],
-		name: "plan → kur → kanıtla",
+		label: "plan → kur → kanıtla",
 		description: "ask-pocock + grill-for-unknowns + gauntlet-loop",
-		detail: "Üç beceriyi sırayla yükler: iş akışını seç, planı sorgula, kodu spec → review → runtime kanıtıyla ilerlet.",
+		also: ["grill-for-unknowns", "gauntlet-loop"],
 	},
 	{
-		type: "skill",
-		id: "skill:grill-for-unknowns",
-		skill: "grill-for-unknowns",
-		name: "grill-for-unknowns",
-		description: "Planı dokümanlara karşı sorgula",
-		detail: "Uygulamadan önce varsayımları tek tek sınar; yanıtı doküman veya kodda olan soruyu sana sormaz.",
-	},
-	{
-		type: "skill",
-		id: "skill:research",
-		skill: "research",
-		name: "research",
-		description: "Birincil kaynaklardan atıflı not",
-		detail: "Okuma işini arka plan ajanına verir; sonucu kaynak atıflı bir dosya olarak bırakır.",
-	},
-	{
-		type: "skill",
-		id: "skill:research-before-build",
-		skill: "research-before-build",
 		name: "research-before-build",
+		label: "research-before-build",
 		description: "Önce mevcut örnekleri araştır, seçenek göster",
-		detail: "Yeni fikir veya özelleştirmede önce çalışan örnekleri bulur, 2–3 uygun seçeneği gösterir, seçtiğini uyarlar. Sen seçmeden kurmaz.",
 	},
-	{
-		type: "skill",
-		id: "skill:gauntlet-loop",
-		skill: "gauntlet-loop",
-		name: "gauntlet-loop",
-		description: "Spec → uygula → review → runtime",
-		detail: "Kod değişikliğinde sabit kabul kriteri, bağımsız reviewer ve gerçek yüzey doğrulamasıyla ilerler.",
-	},
+	{ name: "gauntlet-loop", label: "gauntlet-loop", description: "Spec → uygula → review → runtime" },
 ];
 
-/** Every skill a cockpit row loads, primary first. */
-export function skillNames(s: SkillItem): string[] {
-	return [s.skill, ...(s.also ?? [])];
-}
-
-const extensionDir = dirname(fileURLToPath(import.meta.url));
-const snippetsDir = join(extensionDir, "snippets");
-
-/** OMP loads skills through config.yml skills.enableAgentsUser, which reads the shared store. */
-const skillRoot = join(homedir(), ".agents/skills");
-
-/** True when the skill is installed where this session loads it from. */
-export function skillExists(name: string): boolean {
-	return existsSync(join(skillRoot, name, "SKILL.md"));
-}
-
-/** Curated skills that actually exist on disk; a missing skill must not look runnable. */
-export function availableSkills(): SkillItem[] {
-	return SKILLS.filter((s) => skillNames(s).every(skillExists));
-}
-
-
-const WIDGET_ID = "prompt-snippets";
-
-export function parseSnippet(filename: string, raw: string): Snippet | null {
+export function parseSnippet(file: string, raw: string): Snippet | null {
 	const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
 	if (!match) return null;
 
@@ -201,579 +87,386 @@ export function parseSnippet(filename: string, raw: string): Snippet | null {
 	const body = match[2].trim();
 	if (!body) return null;
 
-	const parsedOrder = Number.parseInt(meta.order ?? "", 10);
+	const order = Number.parseInt(meta.order ?? "", 10);
 	return {
-		id: filename,
-		name: meta.name || filename.replace(/\.md$/i, ""),
+		id: file,
+		name: meta.name || file.replace(/\.md$/i, ""),
 		description: meta.description ?? "",
 		placement: meta.placement === "prepend" ? "prepend" : "append",
-		order: Number.isFinite(parsedOrder) ? parsedOrder : 9999,
+		order: Number.isFinite(order) ? order : 9999,
+		sticky: meta.sticky === "true",
 		body,
 	};
 }
 
-/** Load all snippets, sorted: prepend group first, append group last, each by (order, name). */
-export function loadSnippets(customDir: string = snippetsDir): Snippet[] {
-	if (!existsSync(customDir)) return [];
+export function loadSnippets(customDir: string = SNIPPET_DIR): Snippet[] {
+	if (!fs.existsSync(customDir)) return [];
 	const snippets: Snippet[] = [];
-	for (const file of readdirSync(customDir)) {
-		if (!file.toLowerCase().endsWith(".md")) continue;
+	for (const file of fs.readdirSync(customDir)) {
+		if (!file.endsWith(".md")) continue;
 		try {
-			const snippet = parseSnippet(file, readFileSync(join(customDir, file), "utf8"));
-			if (snippet) snippets.push(snippet);
+			const parsed = parseSnippet(file, fs.readFileSync(path.join(customDir, file), "utf8"));
+			if (parsed) snippets.push(parsed);
 		} catch {
-			// Skip unreadable files
+			// an unreadable snippet is skipped, not fatal
 		}
 	}
-	const byOrder = (a: Snippet, b: Snippet) => a.order - b.order || a.name.localeCompare(b.name);
-	return [
-		...snippets.filter((s) => s.placement === "prepend").sort(byOrder),
-		...snippets.filter((s) => s.placement === "append").sort(byOrder),
-	];
+	return snippets.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+}
+
+export function skillPath(name: string): string {
+	return path.join(SKILL_ROOT, name, "SKILL.md");
+}
+
+export function loadSkills(): Item[] {
+	return CURATED_SKILLS.filter((skill) =>
+		[skill.name, ...(skill.also ?? [])].every((name) => fs.existsSync(skillPath(name))),
+	).map((skill) => ({
+		id: `skill:${skill.label}`,
+		label: skill.label,
+		hint: skill.description,
+		body: [skill.name, ...(skill.also ?? [])].map((name) => skillPath(name)).join("\n"),
+		skills: [skill.name, ...(skill.also ?? [])],
+		sticky: false,
+	}));
+}
+
+export function buildSections(snippets: Snippet[] = loadSnippets()): Section[] {
+	const toItem = (s: Snippet): Item => ({
+		id: `snippet:${s.id}`,
+		label: s.name,
+		hint: s.description,
+		body: s.body,
+		sticky: s.sticky,
+	});
+
+	const prepend = snippets.filter((s) => s.placement === "prepend").map(toItem);
+	const append = snippets.filter((s) => s.placement === "append").map(toItem);
+
+	const sections: Section[] = [];
+	if (prepend.length > 0) sections.push({ title: "↑ Prepend Modifiers", color: "accent", items: prepend });
+	if (append.length > 0) sections.push({ title: "↓ Append Modifiers", color: "warning", items: append });
+	const skills = loadSkills();
+	if (skills.length > 0) sections.push({ title: "🧩 Skills", color: "success", items: skills });
+	return sections;
 }
 
 export interface ThemeLike {
-	fg: (color: string, text: string) => string;
-	bold: (text: string) => string;
+	fg(color: string, text: string): string;
+	bold(text: string): string;
 }
 
-/** Build compact tag pills for the editor widget */
-export function formatBadges(snippets: Snippet[], enabled: Set<string>, theme: ThemeLike): string[] {
-	const pills: string[] = [];
-
-	// 1. Magic Keywords
-	for (const kw of MAGIC_KEYWORDS) {
-		if (enabled.has(kw.id)) {
-			pills.push(theme.fg("accent", `[⚡ ${kw.name}]`));
-		}
-	}
-
-	// 2. Execution Modes
-	for (const ex of EXECUTION_MODES) {
-		if (enabled.has(ex.id)) {
-			pills.push(theme.fg("warning", `[🎯 ${ex.badge}]`));
-		}
-	}
-
-
-	for (const s of SKILLS) {
-		if (enabled.has(s.id)) {
-			pills.push(theme.fg("accent", `[🧩 ${s.name}]`));
-		}
-	}
-
-	// 4. Prepend & Append Snippets
-	const activeSnippets = snippets.filter((s) => enabled.has(s.id));
-	const prepends = activeSnippets.filter((s) => s.placement === "prepend");
-	const appends = activeSnippets.filter((s) => s.placement === "append");
-
-	for (const s of prepends) {
-		pills.push(theme.fg("accent", `[↑ ${s.name}]`));
-	}
-	for (const s of appends) {
-		pills.push(theme.fg("warning", `[↓ ${s.name}]`));
-	}
-
-	if (pills.length === 0) return [];
-	return [pills.join(" ")];
+export function formatBadges(
+	sections: Section[],
+	isActive: (item: Item) => boolean,
+	theme: ThemeLike,
+): string[] {
+	const items = sections.flatMap((s) => s.items).filter(isActive);
+	if (items.length === 0) return [];
+	return [items.map((item) => theme.fg("accent", `[${item.label}]`)).join(" ")];
 }
 
-export type CockpitItem =
-	| { kind: "keyword"; data: MagicKeywordItem }
-	| { kind: "execution"; data: ExecutionModeItem }
-	| { kind: "skill"; data: SkillItem }
+export function assemblePrompt(
+	sections: Section[],
+	isActive: (item: Item) => boolean,
+	editorText: string,
+): string {
+	const items = sections.flatMap((s) => s.items).filter(isActive);
+	const prependSection = sections.find((s) => s.title.startsWith("↑"));
+	const isPrepend = (id: string) => prependSection?.items.some((item) => item.id === id) ?? false;
 
-	| { kind: "snippet"; data: Snippet };
+	const skillLines: string[] = [];
+	for (const item of items) {
+		for (const name of item.skills ?? []) {
+			skillLines.push(`Read ${skillPath(name)} and follow it for this task.`);
+		}
+	}
 
-export interface SnippetsMenuOptions {
-	snippets: Snippet[];
-	initialEnabled: Set<string>;
-	tui: {
-		terminal?: { rows?: number };
-		requestRender: () => void;
-	};
-	theme: ThemeLike;
-	done: (applied: boolean, result: Set<string>) => void;
+	const snippetItems = items.filter((item) => !item.skills);
+	const prepend = snippetItems.filter((item) => isPrepend(item.id)).map((item) => item.body);
+	const append = snippetItems.filter((item) => !isPrepend(item.id)).map((item) => item.body);
+
+	return [...skillLines, ...prepend, editorText.trim(), ...append].filter(Boolean).join("\n\n");
 }
 
-export interface SnippetsMenuComponent {
-	render(width: number): string[];
-	handleInput(data: string): void;
-	invalidate(): void;
-	readonly mode: "list" | "preview";
-	readonly cursor: number;
-	readonly working: Set<string>;
-}
-
-/** Create the TUI menu component for the unified prompt cockpit. */
-export function createSnippetsMenuComponent(options: SnippetsMenuOptions): SnippetsMenuComponent {
-	const { snippets, initialEnabled, tui, theme, done } = options;
-
-	const prepends = snippets.filter((s) => s.placement === "prepend");
-	const appends = snippets.filter((s) => s.placement === "append");
-
-	const skills = availableSkills();
-
-	// Build unified items list
-	const items: CockpitItem[] = [
-		...MAGIC_KEYWORDS.map((k) => ({ kind: "keyword" as const, data: k })),
-		...EXECUTION_MODES.map((e) => ({ kind: "execution" as const, data: e })),
-		...prepends.map((s) => ({ kind: "snippet" as const, data: s })),
-		...appends.map((s) => ({ kind: "snippet" as const, data: s })),
-
-		...skills.map((s) => ({ kind: "skill" as const, data: s })),
-	];
-
-	const working = new Set(initialEnabled);
-	let mode: "list" | "preview" = "list";
-	let cursor = 0;
-	let listScroll = 0;
-	let previewScroll = 0;
-	const ROW_PREFIX_WIDTH = 6; // "› " pointer + "[x] " checkbox
-
-	/** One item: name plus description wrapped with a hanging indent, never cut mid-word. */
-	const itemRows = (item: CockpitItem, idx: number, width: number): string[] => {
-		const isSelected = working.has(item.data.id);
-		const isCursor = idx === cursor;
-		const pointer = isCursor ? theme.fg("accent", "› ") : "  ";
-		const checkbox = isSelected ? theme.fg("success", "[x]") : theme.fg("dim", "[ ]");
-		const prefix = `${pointer}${checkbox} `;
-		const indent = " ".repeat(ROW_PREFIX_WIDTH);
-		const name = isCursor ? theme.bold(item.data.name) : item.data.name;
-		const desc = item.data.description ? theme.fg("dim", ` — ${item.data.description}`) : "";
-		const avail = Math.max(10, width - ROW_PREFIX_WIDTH);
-		return wrapTextWithAnsi(`${name}${desc}`, avail).map((line, i) =>
-			truncateToWidth(i === 0 ? `${prefix}${line}` : `${indent}${line}`, width),
-		);
-	};
-
-	/** Section header with a right-aligned "seçili/toplam" counter. */
-	const sectionHeader = (label: string, color: string, ids: string[], width: number): string => {
-		const active = ids.filter((id) => working.has(id)).length;
-		const left = theme.bold(theme.fg(color, label));
-		const right = theme.fg("dim", `${active}/${ids.length}`);
-		const gap = Math.max(1, width - visibleWidth(left) - visibleWidth(right) - 1);
-		return truncateToWidth(`${left}${" ".repeat(gap)}${right}`, width);
-	};
-
-	const buildListRows = (width: number): { text: string; itemIndex: number | null }[] => {
-		const rows: { text: string; itemIndex: number | null }[] = [];
-		let currentIndex = 0;
-
-		const pushItem = (item: CockpitItem): void => {
-			const idx = currentIndex++;
-			for (const text of itemRows(item, idx, width)) rows.push({ text, itemIndex: idx });
-		};
-
-		// 1. Magic Keywords
-		rows.push({
-			text: sectionHeader("⚡ Magic Keywords", "accent", MAGIC_KEYWORDS.map((k) => k.id), width),
-			itemIndex: null,
-		});
-		for (const kw of MAGIC_KEYWORDS) pushItem({ kind: "keyword", data: kw });
-
-		// 2. Execution Modes
-		rows.push({
-			text: sectionHeader("🎯 Execution Modes", "warning", EXECUTION_MODES.map((e) => e.id), width),
-			itemIndex: null,
-		});
-		for (const ex of EXECUTION_MODES) pushItem({ kind: "execution", data: ex });
-
-		// 3. Prepend snippets stay above Append and Skills: they are the most used.
-		if (prepends.length > 0) {
-			rows.push({
-				text: sectionHeader("↑ Prepend Modifiers", "accent", prepends.map((s) => s.id), width),
-				itemIndex: null,
-			});
-			for (const s of prepends) pushItem({ kind: "snippet", data: s });
-		}
-
-		// 4. Append snippets
-		if (appends.length > 0) {
-			rows.push({
-				text: sectionHeader("↓ Append Modifiers", "warning", appends.map((s) => s.id), width),
-				itemIndex: null,
-			});
-			for (const s of appends) pushItem({ kind: "snippet", data: s });
-		}
-
-
-
-		// 6. Skills last: a long optional list must not push snippets off screen.
-		if (skills.length > 0) {
-			rows.push({
-				text: sectionHeader("🧩 Skills", "accent", skills.map((s) => s.id), width),
-				itemIndex: null,
-			});
-			for (const s of skills) pushItem({ kind: "skill", data: s });
-		}
-
-		return rows;
-	};
-
-	const buildPreviewRows = (item: CockpitItem, width: number): string[] => {
-		const rows: string[] = [];
-		const d = item.data;
-		rows.push(truncateToWidth(theme.bold(d.name), width));
-
-		if (item.kind === "keyword") {
-			rows.push(truncateToWidth(theme.fg("accent", `Magic Keyword · OMP yerleşik · ${d.keyword}`), width));
-			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
-			rows.push(truncateToWidth(theme.bold("Açıklama:"), width));
-			for (const wrapped of wrapTextWithAnsi(d.detail, width)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-			rows.push("");
-			for (const wrapped of wrapTextWithAnsi(
-				theme.fg("dim", "Etki: Bu sözcük istemin başına doğrudan eklenir ve OMP'nin özel çalışma modunu tetikler."),
-				width,
-			)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-		} else if (item.kind === "execution") {
-			rows.push(truncateToWidth(theme.fg("warning", `Execution Mode · Komut Öneki: ${d.commandPrefix.trim()}`), width));
-			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
-			rows.push(truncateToWidth(theme.bold("Açıklama:"), width));
-			for (const wrapped of wrapTextWithAnsi(d.detail, width)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-			rows.push("");
-			for (const wrapped of wrapTextWithAnsi(
-				theme.fg("dim", `Sözdizimi: ${d.commandPrefix}<isteminiz>`),
-				width,
-			)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-
-		} else if (item.kind === "skill") {
-			rows.push(truncateToWidth(theme.fg("accent", `Skill · ${skillNames(d).map((n) => `skill://${n}/SKILL.md`).join(" + ")}`), width));
-			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
-			rows.push(truncateToWidth(theme.bold("Açıklama:"), width));
-			for (const wrapped of wrapTextWithAnsi(d.detail, width)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-			rows.push("");
-			for (const wrapped of wrapTextWithAnsi(
-				theme.fg("dim", "Etki: Seçilirse istemin başına bu beceriyi okuma ve uygulama direktifi eklenir."),
-				width,
-			)) {
-				rows.push(truncateToWidth(wrapped, width));
-			}
-		} else if (item.kind === "snippet") {
-			const s = d as Snippet;
-			rows.push(truncateToWidth(theme.fg("dim", `${s.placement} · order ${s.order} · ${s.id}`), width));
-			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
-			for (const line of s.body.split("\n")) {
-				for (const wrapped of wrapTextWithAnsi(line, width)) {
-					rows.push(truncateToWidth(wrapped, width));
-				}
-			}
-		}
-
-		return rows;
-	};
-
-	const viewport = (
-		lines: string[],
-		scroll: number,
-		maxView: number,
-		focusStart?: number,
-		focusEnd?: number,
-	): { out: string[]; scroll: number } => {
-		const clipped = lines.length > maxView;
-		const view = clipped ? Math.max(1, maxView - 2) : maxView;
-
-		let s = Math.min(Math.max(0, scroll), Math.max(0, lines.length - view));
-		if (focusStart !== undefined) {
-			const end = focusEnd ?? focusStart;
-			if (end - focusStart + 1 >= view) s = focusStart;
-			else if (focusStart < s) s = focusStart;
-			else if (end >= s + view) s = end - view + 1;
-		}
-
-		const visible = lines.slice(s, s + view);
-		if (!clipped) return { out: visible, scroll: s };
-
-		const above = s;
-		const below = lines.length - (s + view);
-		const out = [...visible];
-		if (above > 0) out.unshift(theme.fg("dim", `  ↑ ${above} daha fazla`));
-		if (below > 0) out.push(theme.fg("dim", `  ↓ ${below} daha fazla`));
-		return { out, scroll: s };
-	};
-
+export function stickyTail(
+	snippets: Snippet[] = loadSnippets(),
+	disabled: Set<string> = new Set(),
+): { head: string[]; tail: string[] } {
+	const sticky = snippets.filter((s) => s.sticky && !disabled.has(`snippet:${s.id}`));
 	return {
-		render(width: number): string[] {
-			const activeCount = working.size;
-			const stateText =
-				activeCount === 0
-					? "Hiçbiri seçili değil. Bu bir todo listesi değil: seçim yalnız bir sonraki mesaja eklenir."
-					: `${activeCount} seçim bir sonraki mesaja eklenecek; gönderimden sonra sıfırlanır.`;
-			const currentItem = items[cursor];
-			const title =
-				mode === "list"
-					? activeCount > 0
-						? `Prompt Cockpit · ${activeCount} seçili`
-						: "Prompt Cockpit"
-					: `Detay · ${currentItem.data.name}${working.has(currentItem.data.id) ? " · seçili" : ""}`;
-			const hints =
-				mode === "list"
-					? "↑↓ gez · 1-5 · Space seç · c temizle · Tab detay · Enter uygula · Esc"
-					: "↑↓ kaydır · Space seç · Tab/Esc geri · Enter uygula";
+		head: sticky.filter((s) => s.placement === "prepend").map((s) => s.body),
+		tail: sticky.filter((s) => s.placement === "append").map((s) => s.body),
+	};
+}
 
-			// Footer height depends on width, so measure it before sizing the viewport.
-			const footerLines = [hints, stateText].flatMap((text) =>
-				wrapTextWithAnsi(theme.fg("dim", text), Math.max(10, width - 2)).map((line) =>
-					truncateToWidth(` ${line}`, width),
+export interface CockpitComponent {
+	cursor: number;
+	detail: boolean;
+	working: { enabled: Set<string>; disabled: Set<string> };
+	items: Item[];
+	render: (width: number) => string[];
+	handleInput: (data: string) => void;
+	isActive: (item: Item) => boolean;
+}
+
+export function createCockpitComponent(options: {
+	sections: Section[];
+	initialEnabled?: Set<string>;
+	initialDisabled?: Set<string>;
+	theme: ThemeLike;
+	tui?: { requestRender: () => void; terminal?: { rows?: number; cols?: number } };
+	done: (result: { confirmed: boolean; enabled: Set<string>; disabled: Set<string> } | null) => void;
+}): CockpitComponent {
+	const { sections, theme, tui, done } = options;
+	const items = sections.flatMap((s) => s.items);
+	const enabled = new Set<string>(options.initialEnabled ?? []);
+	const disabled = new Set<string>(options.initialDisabled ?? []);
+
+	let cursor = 0;
+	let detail = false;
+
+	function isActive(item: Item): boolean {
+		if (disabled.has(item.id)) return false;
+		return item.sticky || enabled.has(item.id);
+	}
+
+	function render(width: number): string[] {
+		const lines: string[] = [];
+		const on = items.filter(isActive);
+
+		const title = `${theme.fg("accent", "── Prompt Cockpit ")}${theme.fg("dim", "─".repeat(Math.max(1, width - 18)))}`;
+		lines.push(truncateToWidth(title, width));
+
+		let index = 0;
+		for (const section of sections) {
+			const sectionOn = section.items.filter(isActive).length;
+			const gap = Math.max(1, width - visibleWidth(section.title) - visibleWidth(`${sectionOn}/${section.items.length}`) - 1);
+			lines.push(
+				truncateToWidth(
+					`${theme.fg(section.color, section.title)}${" ".repeat(gap)}${theme.fg("dim", `${sectionOn}/${section.items.length}`)}`,
+					width,
 				),
 			);
-			const maxView = Math.max(5, (tui.terminal?.rows ?? 24) - 3 - footerLines.length);
 
-			let content: string[];
-			if (mode === "list") {
-				const rows = buildListRows(width);
-				const cursorRows = rows.flatMap((r, i) => (r.itemIndex === cursor ? [i] : []));
-				const v = viewport(
-					rows.map((r) => r.text),
-					listScroll,
-					maxView,
-					cursorRows[0],
-					cursorRows[cursorRows.length - 1],
-				);
-				content = v.out;
-				listScroll = v.scroll;
-			} else {
-				const v = viewport(buildPreviewRows(currentItem, width), previewScroll, maxView);
-				content = v.out;
-				previewScroll = v.scroll;
+			for (const item of section.items) {
+				const here = index === cursor;
+				const mark = isActive(item) ? "[x]" : "[ ]";
+				const pointer = here ? theme.fg("accent", "› ") : "  ";
+				const label = here ? theme.bold(item.label) : item.label;
+				const hint = item.hint ? ` ${theme.fg("dim", `— ${item.hint}`)}` : "";
+				lines.push(truncateToWidth(`${pointer}${mark} ${label}${hint}`, width));
+				index += 1;
 			}
+		}
 
-			const titleText = ` ${title} `;
-			const titleLen = visibleWidth(titleText);
-			const remainingDashes = Math.max(0, width - 2 - titleLen);
-			const headerLine = truncateToWidth(
-				theme.fg("accent", "──") + theme.bold(titleText) + theme.fg("accent", "─".repeat(remainingDashes)),
-				width,
-			);
-			const footerDivider = theme.fg("accent", "─".repeat(width));
+		if (detail) {
+			const current = items[cursor];
+			lines.push(truncateToWidth(theme.fg("dim", "─".repeat(width)), width));
+			for (const line of (current?.body ?? "").split("\n").slice(0, 10)) {
+				lines.push(truncateToWidth(theme.fg("dim", line), width));
+			}
+		}
 
-			return [headerLine, ...content, footerDivider, ...footerLines];
-		},
-		invalidate() {},
-		handleInput(data: string) {
-			if (mode === "list") {
-				const kwStart = 0;
-				const execStart = MAGIC_KEYWORDS.length;
-				const prepStart = execStart + EXECUTION_MODES.length;
-				const appStart = prepStart + prepends.length;
-				const skillStart = appStart + appends.length;
+		lines.push(truncateToWidth(theme.fg("dim", "─".repeat(width)), width));
+		const footer = "↑↓ gez · 1-3 bölüm · Space seç · c temizle · Tab detay · Enter gönder · Esc iptal";
+		const counter = `${on.length}/${items.length}`;
+		const pad = Math.max(1, width - visibleWidth(footer) - visibleWidth(counter));
+		lines.push(truncateToWidth(theme.fg("dim", footer) + " ".repeat(pad) + theme.fg("dim", counter), width));
+		return lines;
+	}
 
-				if (data === "c" || data === "C") {
-					working.clear();
-					tui.requestRender();
-					return;
-				} else if (data === "1") {
-					cursor = kwStart;
-					tui.requestRender();
-					return;
-				} else if (data === "2" && EXECUTION_MODES.length > 0) {
-					cursor = execStart;
-					tui.requestRender();
-					return;
-				} else if (data === "3" && prepends.length > 0) {
-					cursor = prepStart;
-					tui.requestRender();
-					return;
-				} else if (data === "4" && appends.length > 0) {
-					cursor = appStart;
-					tui.requestRender();
-					return;
-				} else if (data === "5" && skills.length > 0) {
-					cursor = skillStart;
-					tui.requestRender();
-					return;
-				}
-
-				if (matchesKey(data, Key.up)) {
-					cursor = (cursor - 1 + items.length) % items.length;
-					tui.requestRender();
-				} else if (matchesKey(data, Key.down)) {
-					cursor = (cursor + 1) % items.length;
-					tui.requestRender();
-				} else if (matchesKey(data, Key.space)) {
-					const currentItem = items[cursor];
-					const id = currentItem.data.id;
-					if (working.has(id)) {
-						working.delete(id);
-					} else {
-						// Execution mode is mutually exclusive: toggle off other execution modes
-						if (currentItem.kind === "execution") {
-							for (const ex of EXECUTION_MODES) {
-								working.delete(ex.id);
-							}
-						}
-						working.add(id);
-					}
-					tui.requestRender();
-				} else if (matchesKey(data, Key.tab)) {
-					mode = "preview";
-					previewScroll = 0;
-					tui.requestRender();
-				} else if (matchesKey(data, Key.enter)) {
-					done(true, working);
-				} else if (matchesKey(data, Key.escape)) {
-					done(false, working);
-				}
-			} else {
-				if (matchesKey(data, Key.up)) {
-					previewScroll = Math.max(0, previewScroll - 1);
-					tui.requestRender();
-				} else if (matchesKey(data, Key.down)) {
-					previewScroll++;
-					tui.requestRender();
-				} else if (matchesKey(data, Key.space)) {
-					const currentItem = items[cursor];
-					const id = currentItem.data.id;
-					if (working.has(id)) {
-						working.delete(id);
-					} else {
-						if (currentItem.kind === "execution") {
-							for (const ex of EXECUTION_MODES) {
-								working.delete(ex.id);
-							}
-						}
-						working.add(id);
-					}
-					tui.requestRender();
-				} else if (matchesKey(data, Key.tab) || matchesKey(data, Key.escape)) {
-					mode = "list";
-					tui.requestRender();
-				} else if (matchesKey(data, Key.enter)) {
-					done(true, working);
+	function handleInput(data: string): void {
+		if (matchesKey(data, "escape")) {
+			done(null);
+			return;
+		}
+		if (matchesKey(data, "return")) {
+			done({ confirmed: true, enabled, disabled });
+			return;
+		}
+		if (matchesKey(data, "up")) {
+			cursor = (cursor - 1 + items.length) % items.length;
+			tui?.requestRender();
+			return;
+		}
+		if (matchesKey(data, "down")) {
+			cursor = (cursor + 1) % items.length;
+			tui?.requestRender();
+			return;
+		}
+		if (matchesKey(data, "tab")) {
+			detail = !detail;
+			tui?.requestRender();
+			return;
+		}
+		if (data === " ") {
+			const item = items[cursor];
+			if (item) {
+				if (isActive(item)) {
+					if (item.sticky) disabled.add(item.id);
+					enabled.delete(item.id);
+				} else {
+					disabled.delete(item.id);
+					enabled.add(item.id);
 				}
 			}
-		},
-		get mode() {
-			return mode;
-		},
+			tui?.requestRender();
+			return;
+		}
+		if (data === "c" || data === "C") {
+			const onCount = items.filter(isActive).length;
+			if (onCount > 0) {
+				enabled.clear();
+				for (const item of items) {
+					if (item.sticky) disabled.add(item.id);
+				}
+			} else {
+				enabled.clear();
+				disabled.clear();
+			}
+			tui?.requestRender();
+			return;
+		}
+		if (/^[1-9]$/.test(data)) {
+			const section = sections[Number(data) - 1];
+			const first = section?.items[0];
+			if (first) cursor = items.findIndex((item) => item.id === first.id);
+			tui?.requestRender();
+		}
+	}
+
+	return {
 		get cursor() {
 			return cursor;
 		},
-		get working() {
-			return working;
+		set cursor(val: number) {
+			cursor = val;
 		},
+		get detail() {
+			return detail;
+		},
+		working: { enabled, disabled },
+		items,
+		render,
+		handleInput,
+		isActive,
 	};
 }
 
-/** Resolve the selected cockpit ids into the exact text sent for one turn. */
-export function assemblePrompt(working: Set<string>, snippets: Snippet[], text: string): string {
-	const activeKeywords = MAGIC_KEYWORDS.filter((k) => working.has(k.id)).map((k) => k.keyword);
-	const activeExecution = EXECUTION_MODES.find((e) => working.has(e.id));
+export default function (pi: ExtensionAPI): void {
+	let enabled = new Set<string>(); // explicitly turned on
+	let disabled = new Set<string>(); // sticky items explicitly turned off
 
-	const activeSkills = availableSkills().filter((s) => working.has(s.id));
-	const activeSnippets = snippets.filter((s) => working.has(s.id));
-	const prependBodies = activeSnippets.filter((s) => s.placement === "prepend").map((s) => s.body);
-	const appendBodies = activeSnippets.filter((s) => s.placement === "append").map((s) => s.body);
-
-	const skillList = [...new Set(activeSkills.flatMap(skillNames))];
-
-	const sections: string[] = [];
-	if (activeKeywords.length > 0) sections.push(activeKeywords.join("\n"));
-	if (skillList.length > 0) {
-		sections.push(skillList.map((name) => `Read skill://${name}/SKILL.md and follow it for this task.`).join("\n"));
+	function isActive(item: Item): boolean {
+		if (disabled.has(item.id)) return false;
+		return item.sticky || enabled.has(item.id);
 	}
-	sections.push(...prependBodies, text, ...appendBodies);
 
-	const fullText = sections.join("\n\n");
-	return activeExecution ? `${activeExecution.commandPrefix}${fullText}` : fullText;
-}
+	function activeItems(sections: Section[]): Item[] {
+		return sections.flatMap((s) => s.items).filter(isActive);
+	}
 
-export default function (pi: ExtensionAPI) {
-	let snippets: Snippet[] = [];
-	let enabled = new Set<string>();
+	function reset(): void {
+		enabled = new Set();
+	}
 
-	function updateWidget(ctx: ExtensionContext) {
-		if (!ctx.hasUI || ctx.mode !== "tui") return;
-		const badges = formatBadges(snippets, enabled, ctx.ui.theme);
-		if (badges.length === 0) {
-			ctx.ui.setWidget(WIDGET_ID, undefined);
-		} else {
-			ctx.ui.setWidget(WIDGET_ID, badges);
+	function badges(ctx: ExtensionContext): void {
+		const sections = buildSections();
+		const items = activeItems(sections);
+		if (items.length === 0) {
+			ctx.ui.setWidget(BADGE_WIDGET, undefined);
+			return;
 		}
+		const theme = ctx.ui.theme;
+		ctx.ui.setWidget(BADGE_WIDGET, [items.map((item) => theme.fg("accent", `[${item.label}]`)).join(" ")]);
 	}
 
-	async function openMenu(ctx: ExtensionContext) {
-		if (ctx.mode !== "tui") {
-			ctx.ui.notify("Cockpit menu requires interactive mode", "warning");
+	async function open(ctx: ExtensionContext): Promise<void> {
+		const sections = buildSections();
+		if (sections.length === 0) {
+			ctx.ui.notify("No snippets or skills found", "warning");
 			return;
 		}
 
-		snippets = loadSnippets();
+		const result = await ctx.ui.custom<{ confirmed: boolean; enabled: Set<string>; disabled: Set<string> } | null>(
+			(tui, theme, _keybindings, done) => {
+				const comp = createCockpitComponent({
+					sections,
+					initialEnabled: enabled,
+					initialDisabled: disabled,
+					theme,
+					tui,
+					done,
+				});
+				return {
+					render: (width) => comp.render(width),
+					handleInput: (data) => comp.handleInput(data),
+					invalidate: () => {},
+				};
+			},
+		);
 
-		// Keep only valid IDs (keywords, execution modes, or existing snippets on disk)
-		const validIds = new Set([
-			...MAGIC_KEYWORDS.map((k) => k.id),
-			...EXECUTION_MODES.map((e) => e.id),
-			...SKILLS.map((s) => s.id),
-
-			...snippets.map((s) => s.id),
-		]);
-		enabled = new Set([...enabled].filter((id) => validIds.has(id)));
-
-		const result = await ctx.ui.custom<{ confirmed: boolean; enabled: Set<string> }>((tui, theme, _keybindings, done) => {
-			return createSnippetsMenuComponent({
-				snippets,
-				initialEnabled: enabled,
-				tui,
-				theme,
-				done: (confirmed, finalWorking) => done({ confirmed, enabled: finalWorking }),
-			});
-		});
-
-		if (result?.confirmed) {
-			enabled = result.enabled;
+		if (!result || !result.confirmed) {
+			badges(ctx);
+			return;
 		}
-		updateWidget(ctx);
+
+		enabled = result.enabled;
+		disabled = result.disabled;
+
+		const message = assemblePrompt(sections, isActive, ctx.ui.getEditorText());
+		if (!message) {
+			ctx.ui.notify("Nothing selected and the editor is empty", "warning");
+			return;
+		}
+
+		const sent = activeItems(sections).map((item) => item.label);
+		ctx.ui.setEditorText("");
+		reset();
+		badges(ctx);
+		pi.sendUserMessage(
+			message,
+			ctx.isIdle() ? { expandPromptTemplates: false } : { deliverAs: "followUp", expandPromptTemplates: false },
+		);
+		ctx.ui.notify(`${ctx.isIdle() ? "Sent" : "Queued"} · ${sent.join(", ")}`, "info");
 	}
 
-	pi.on("session_start", (_event, ctx) => {
-		enabled = new Set();
-		snippets = loadSnippets();
-		if (!existsSync(snippetsDir)) mkdirSync(snippetsDir, { recursive: true });
-		updateWidget(ctx);
-	});
-
-	pi.on("input", async (event, ctx) => {
-		if (enabled.size === 0) return; // continue unchanged
-
-		snippets = loadSnippets();
-		const currentWorking = new Set(enabled);
-		enabled = new Set();
-		updateWidget(ctx);
-
-		return {
-			text: assemblePrompt(currentWorking, snippets, event.text),
-		};
-	});
-
 	pi.registerShortcut("alt+s", {
-		description: "Toggle prompt cockpit (Keywords, Loops, Snippets)",
+		description: "Open the prompt cockpit (snippets, skills)",
 		handler: async (ctx) => {
-			await openMenu(ctx);
+			await open(ctx);
 		},
 	});
 
 	pi.registerCommand("snippets", {
-		description: "Open the prompt cockpit toggle menu",
+		description: "Open the prompt cockpit (snippets, skills)",
 		handler: async (_args, ctx) => {
-			await openMenu(ctx);
+			await open(ctx);
 		},
 	});
 
 	pi.registerCommand("cockpit", {
-		description: "Open the prompt cockpit toggle menu",
+		description: "Open the prompt cockpit (snippets, skills)",
 		handler: async (_args, ctx) => {
-			await openMenu(ctx);
+			await open(ctx);
 		},
+	});
+
+	// Sticky snippets must reach every typed message, not only cockpit sends.
+	pi.on("input", async (event) => {
+		if (event.source === "extension") return { action: "continue" as const };
+		const text = event.text ?? "";
+		if (!text.trim() || text.startsWith("/") || text.startsWith("!")) return { action: "continue" as const };
+		const { head, tail } = stickyTail(loadSnippets(), disabled);
+		if (head.length === 0 && tail.length === 0) return { action: "continue" as const };
+		const next = [...head, text, ...tail].filter(Boolean).join("\n\n");
+		return { action: "transform" as const, text: next };
+	});
+
+	pi.on("session_start", async (_event, ctx) => {
+		enabled = new Set();
+		disabled = new Set();
+		badges(ctx);
 	});
 }
