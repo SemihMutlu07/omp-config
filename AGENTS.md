@@ -74,7 +74,7 @@
 
 ## Harness split
 
-- This file is the shared contract for every harness. It stays harness-neutral: no tool names, slash commands, model IDs, or provider routing. It names harnesses only to locate their adapters: for OMP, `~/dev/omp-config/APPEND_SYSTEM.md` and `config.yml`; for OpenCode, `~/.config/opencode/`.
+- This file is the shared contract for every harness. It stays harness-neutral: no tool names, slash commands, model IDs, or provider routing. A session may run in any harness; do not assume one. It names harnesses only to locate their adapters: for OMP, `~/dev/omp-config/APPEND_SYSTEM.md` and `config.yml`.
 - Skill content lives once in `~/.agents/skills`. A harness either reads that directory or is regenerated from it.
 - Each harness loads this file through its own documented mechanism. Project contracts apply only within their project directory.
 - `tests/test_agents_neutrality.py` guards this rule. Run it after editing this file or a harness adapter.

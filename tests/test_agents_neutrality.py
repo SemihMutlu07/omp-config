@@ -13,8 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SHARED = ROOT / "AGENTS.md"
 OMP_ONLY = ROOT / "APPEND_SYSTEM.md"
 HOME = Path.home()
-OPENCODE_CONFIG = HOME / ".config/opencode/opencode.json"
-OPENCODE_ADAPTER = HOME / ".config/opencode/AGENTS.md"
 OMP_AGENTS_LINK = HOME / ".omp/agent/AGENTS.md"
 OMP_APPENDIX_LINK = HOME / ".omp/agent/APPEND_SYSTEM.md"
 OMP_RULES_LINK = HOME / ".omp/agent/RULES.md"
@@ -74,7 +72,12 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
     def test_every_harness_declares_where_it_loads_rules(self):
         # The split is only real if the shared file says how each side loads it.
         self.assertIn("APPEND_SYSTEM.md", self.text)
-        self.assertIn("~/.config/opencode/", self.text)
+
+    def test_retired_harness_leaves_no_traces(self):
+        # K-20261108-04 retires OpenCode: no adapter, no config, no contract line.
+        self.assertFalse((HOME / ".config/opencode").exists())
+        self.assertFalse((HOME / ".opencode").exists())
+        self.assertNotIn("opencode", self.text.lower())
 
     def test_shared_contract_has_no_project_specific_tokens(self):
         # Kasa rules belong to /home/semihmutlu/Kasa/AGENTS.md, not every project.
@@ -112,12 +115,6 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
         for token in ("`ask-matt`", "find-animation-opportunities"):
             self.assertNotIn(token, self.text)
 
-    def test_opencode_adapter_does_not_duplicate_shared_routing(self):
-        adapter = OPENCODE_ADAPTER.read_text(encoding="utf-8")
-        for token in ("## Skills and workflows", "find-animation-opportunities", "`ask-matt`", "Kasa", "orkestra"):
-            self.assertNotIn(token, adapter)
-        self.assertIn("## OpenCode specifics", adapter)
-
     def test_omp_appendix_does_not_duplicate_shared_routing(self):
         appendix = OMP_ONLY.read_text(encoding="utf-8")
         for token in ("## Skills and workflows", "`ask-pocock`", "`ask-matt`"):
@@ -126,29 +123,6 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
         self.assertEqual(OMP_AGENTS_LINK.resolve(), SHARED.resolve())
         self.assertEqual(OMP_APPENDIX_LINK.resolve(), OMP_ONLY.resolve())
         self.assertEqual(OMP_RULES_LINK.resolve(), RULES.resolve())
-
-    def test_opencode_config_loads_one_shared_contract(self):
-        config = json.loads(OPENCODE_CONFIG.read_text(encoding="utf-8"))
-        self.assertEqual(config.get("instructions"), [str(SHARED)])
-        self.assertNotIn("AGENTS.md", config.get("instructions", []))
-
-    def test_opencode_config_skills_point_at_shared_store(self):
-        """One store: OpenCode lists the same skills every other harness reads."""
-        store = HOME / ".agents/skills"
-        expected = {
-            entry.name
-            for entry in store.iterdir()
-            if not entry.name.startswith(".") and (entry / "SKILL.md").is_file()
-        }
-        self.assertTrue(expected, "shared skill store is empty")
-        config = json.loads(OPENCODE_CONFIG.read_text(encoding="utf-8"))
-        skills = config.get("skills", [])
-        self.assertEqual(len(skills), len(expected))
-        self.assertEqual({Path(path).name for path in skills}, expected)
-        for path in skills:
-            skill_dir = Path(path)
-            self.assertEqual(skill_dir.parent, store)
-            self.assertTrue((skill_dir / "SKILL.md").is_file(), path)
 
     def test_harness_skill_roots_share_one_store(self):
         """A harness root is a link to the store, never a second hand-made copy."""
@@ -177,7 +151,7 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
             self.assertIn(token, text)
 
     def test_kasa_tokens_do_not_leak_globally(self):
-        combined = self.text + "\n" + OPENCODE_ADAPTER.read_text(encoding="utf-8")
+        combined = self.text
         for token in ("Kasa", "kasa-capture", "orkestra.md", ".kasa/policy.toml"):
             self.assertNotIn(token, combined)
 
