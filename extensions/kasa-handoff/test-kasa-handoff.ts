@@ -235,3 +235,20 @@ describe("accumulation and intent", () => {
 		expect(block).toContain("Niyet:");
 	});
 });
+
+describe("concurrent writers", () => {
+	test("eight processes closing a turn together keep every line", async () => {
+		const root = vault();
+		const script = join(roots, "writer.ts");
+		await Bun.write(
+			script,
+			`import { writeLine } from ${JSON.stringify(join(import.meta.dir, "index.ts"))};
+const [root, minute] = process.argv.slice(2);
+writeLine(root, \`- 10:\${minute} [omp] Yaptım: m\${minute} | Kanıt: k | Sırada: s\`, new Date(2026, 10, 9, 10, Number(minute)));`,
+		);
+		const minutes = ["10", "11", "12", "13", "14", "15", "16", "17"];
+		await Promise.all(minutes.map((m) => Bun.spawn(["bun", script, root, m]).exited));
+		const text = readFileSync(join(root, "handoff", "2026-11-09.md"), "utf8");
+		for (const m of minutes) expect(text).toContain(`Yaptım: m${m} `);
+	});
+});

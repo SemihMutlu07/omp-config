@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -163,20 +164,44 @@ def seed(now: datetime) -> str:
     )
 
 
+def acquire_lock(lock: Path):
+    """Same mkdir lock as extensions/kasa-handoff/index.ts; a lock older than 10 s is stale."""
+    deadline = time.time() + 3
+    while True:
+        try:
+            lock.mkdir()
+            return lock
+        except FileExistsError:
+            try:
+                if time.time() - lock.stat().st_mtime > 10:
+                    lock.rmdir()
+                    continue
+            except FileNotFoundError:
+                continue
+            if time.time() > deadline:
+                return None
+            time.sleep(0.025)
+
+
 def write_entry(root: Path, block: dict[str, str], now: datetime) -> bool:
     handoff = root / "handoff"
     if not handoff.is_dir():
         return False
-    path = handoff / f"{now:%Y-%m-%d}.md"
-    before = path.read_text(encoding="utf-8") if path.is_file() else seed(now)
-    after = apply_entry(before, format_entry(block, now, "claude"))
-    if after == before:
-        return False
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=handoff, prefix=".kasa-handoff-", delete=False) as handle:
-        handle.write(after)
-        temp = Path(handle.name)
-    temp.replace(path)
-    return True
+    lock = acquire_lock(handoff / ".kasa-handoff.lock")
+    try:
+        path = handoff / f"{now:%Y-%m-%d}.md"
+        before = path.read_text(encoding="utf-8") if path.is_file() else seed(now)
+        after = apply_entry(before, format_entry(block, now, "claude"))
+        if after == before:
+            return False
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=handoff, prefix=".kasa-handoff-", delete=False) as handle:
+            handle.write(after)
+            temp = Path(handle.name)
+        temp.replace(path)
+        return True
+    finally:
+        if lock:
+            lock.rmdir()
 
 
 def main() -> int:

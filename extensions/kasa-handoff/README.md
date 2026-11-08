@@ -51,3 +51,7 @@ kullandıysa `{"decision":"block","reason":…}` ile tek devam turu ister.
 bun test ./extensions/kasa-handoff/test-kasa-handoff.ts
 python3 tests/test_agents_neutrality.py
 ```
+
+## Concurrent writers
+
+`writeLine` and `scripts/claude-kasa-handoff.py` take the same `handoff/.kasa-handoff.lock` directory lock around read-modify-write. Two sessions closing a turn together keep both lines. A lock older than 10 s is broken. A lock held longer than 3 s is skipped so a turn never hangs.

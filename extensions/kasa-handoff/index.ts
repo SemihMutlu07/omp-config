@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
@@ -156,15 +156,41 @@ function closingPath(root: string, now: Date): string {
 export function writeLine(root: string, line: string, now: Date): boolean {
 	const handoffDir = join(root, "handoff");
 	if (!existsSync(handoffDir)) return false;
-	const path = closingPath(root, now);
-	const before = existsSync(path) ? readFileSync(path, "utf8") : seed(now);
-	const after = applyEntry(before, line);
-	if (after === before) return false;
-	mkdirSync(handoffDir, { recursive: true });
-	const temp = `${path}.kasa-handoff-${process.pid}.tmp`;
-	writeFileSync(temp, after);
-	renameSync(temp, path);
-	return true;
+	const release = acquireLock(join(handoffDir, ".kasa-handoff.lock"));
+	try {
+		const path = closingPath(root, now);
+		const before = existsSync(path) ? readFileSync(path, "utf8") : seed(now);
+		const after = applyEntry(before, line);
+		if (after === before) return false;
+		const temp = `${path}.kasa-handoff-${process.pid}.tmp`;
+		writeFileSync(temp, after);
+		renameSync(temp, path);
+		return true;
+	} finally {
+		release();
+	}
+}
+
+/**
+ * Cross-process lock shared with scripts/claude-kasa-handoff.py. mkdir is atomic
+ * on every platform, so two sessions closing a turn together cannot both read the
+ * same base file. A lock older than 10 s is stale and gets broken.
+ */
+function acquireLock(lockDir: string): () => void {
+	const deadline = Date.now() + 3000;
+	for (;;) {
+		try {
+			mkdirSync(lockDir);
+			return () => rmSync(lockDir, { recursive: true, force: true });
+		} catch {
+			if (Date.now() - statSync(lockDir, { throwIfNoEntry: false })?.mtimeMs! > 10_000) {
+				rmSync(lockDir, { recursive: true, force: true });
+			} else if (Date.now() > deadline) {
+				return () => {};
+			}
+			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+		}
+	}
 }
 
 export function writeEntry(root: string, block: ClosingBlock, now: Date, agent: string): boolean {
