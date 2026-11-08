@@ -218,4 +218,20 @@ describe("accumulation and intent", () => {
 			delete process.env.KASA_ROOT;
 		}
 	});
+
+	test("worst-case Turkish text keeps the newest closing and an intent inside 1000 bytes", () => {
+		const long = "ş".repeat(240);
+		const closing = formatEntry({ done: long, proof: long, next: long }, stamp, "omp");
+		const intent = formatIntent("ş".repeat(400), stamp, "omp");
+		expect(Buffer.byteLength(closing)).toBeLessThanOrEqual(450);
+		expect(Buffer.byteLength(intent)).toBeLessThanOrEqual(360);
+		let text = applyEntry("---\ntitle: D\n---\n", intent);
+		text = applyEntry(text, closing);
+		text = applyEntry(text, intent.replace("10:00", "10:01"));
+		text = applyEntry(text, closing.replace("10:00", "10:02"));
+		const block = /<!-- kasa-handoff:auto:begin -->\n([\s\S]*?)\n<!-- kasa-handoff:auto:end -->/.exec(text)?.[1] ?? "";
+		expect(Buffer.byteLength(block)).toBeLessThanOrEqual(1000);
+		expect(block).toContain("10:02");
+		expect(block).toContain("Niyet:");
+	});
 });

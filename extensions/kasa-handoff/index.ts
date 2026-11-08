@@ -18,6 +18,9 @@ const ENTRY_CLIP = 240;
 const INTENT_CLIP = 160;
 const INTENT_KEEP = 2;
 const BLOCK_BUDGET = 1000;
+// Per-line byte caps: newest closing + one intent always fit the budget, even in 2-byte Turkish text.
+const ENTRY_BYTES = 450;
+const INTENT_BYTES = 360;
 const NUDGE =
 	"Kapanış bloğu eksik. Cevabını bir kez oku; en sona tam olarak şu üç satırı ekle: " +
 	"`Yaptım: …`, `Kanıt: …`, `Sırada: …`. Doğrulamadığın işe bitmiş deme, yeni iş açma.";
@@ -70,15 +73,27 @@ function clock(now: Date): string {
 	return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
+/** Cuts a line to a UTF-8 byte cap on a character boundary, so Turkish text cannot blow the budget. */
+export function clampBytes(line: string, max: number): string {
+	if (Buffer.byteLength(line, "utf8") <= max) return line;
+	let out = "";
+	for (const char of line) {
+		if (Buffer.byteLength(out + char, "utf8") > max - 3) break;
+		out += char;
+	}
+	return `${out}…`;
+}
+
 export function formatEntry(block: ClosingBlock, now: Date, agent: string): string {
-	return `- ${clock(now)} [${agent}] Yaptım: ${block.done} | Kanıt: ${block.proof} | Sırada: ${block.next}`;
+	const line = `- ${clock(now)} [${agent}] Yaptım: ${block.done} | Kanıt: ${block.proof} | Sırada: ${block.next}`;
+	return clampBytes(line, ENTRY_BYTES);
 }
 
 /** The user's first prompt of a session, one line, clipped. */
 export function formatIntent(text: string, now: Date, agent: string): string {
 	const flat = text.replace(/\s+/g, " ").trim();
 	const clipped = flat.length > INTENT_CLIP ? `${flat.slice(0, INTENT_CLIP)}…` : flat;
-	return `- ${clock(now)} [${agent}] Niyet: "${clipped}"`;
+	return clampBytes(`- ${clock(now)} [${agent}] Niyet: "${clipped}"`, INTENT_BYTES);
 }
 
 /** Newest first. The newest line never drops; old closings drop before intents. */

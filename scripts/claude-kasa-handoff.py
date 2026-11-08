@@ -23,6 +23,7 @@ END = "<!-- kasa-handoff:auto:end -->"
 ENTRY_CLIP = 240
 INTENT_KEEP = 2
 BLOCK_BUDGET = 1000
+ENTRY_BYTES = 450
 NUDGE = (
     "Kapanış bloğu eksik. Cevabını bir kez oku; en sona tam olarak şu üç satırı ekle: "
     "`Yaptım: …`, `Kanıt: …`, `Sırada: …`. Doğrulamadığın işe bitmiş deme, yeni iş açma."
@@ -99,11 +100,24 @@ def parse_block(text: str) -> dict[str, str] | None:
     return found
 
 
+def clamp_bytes(line: str, limit: int) -> str:
+    """Cut to a UTF-8 byte cap on a character boundary."""
+    if len(line.encode("utf-8")) <= limit:
+        return line
+    out = ""
+    for char in line:
+        if len((out + char).encode("utf-8")) > limit - 3:
+            break
+        out += char
+    return out + "…"
+
+
 def format_entry(block: dict[str, str], now: datetime, agent: str) -> str:
-    return (
+    line = (
         f"- {now:%H:%M} [{agent}] Yaptım: {block['done']} | "
         f"Kanıt: {block['proof']} | Sırada: {block['next']}"
     )
+    return clamp_bytes(line, ENTRY_BYTES)
 
 
 def fit(lines: list[str]) -> list[str]:
