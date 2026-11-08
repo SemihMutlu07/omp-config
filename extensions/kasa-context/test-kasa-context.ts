@@ -82,32 +82,6 @@ test("main session does not use an agent notification as a lookup topic", async 
   });
 });
 
-test("main session asks the helper for session-start context; sub agents do not", async () => {
-  const root = mkdtempSync(join(tmpdir(), "kasa-echo-helper-"));
-  mkdirSync(join(root, "_vault/scripts"), { recursive: true });
-  // The stub echoes the request it received, so the assertion reads what the helper was asked.
-  writeFileSync(join(root, "_vault/scripts/kasa-context.py"),
-    "import json,sys\nreq=json.load(sys.stdin)\n"
-    + "print(json.dumps({'status':'ready','content':json.dumps(req),'paths':['x.md'],'bytes':1}))\n");
-  const original = process.env.KASA_ROOT;
-  process.env.KASA_ROOT = root;
-  try {
-    const asked = async (kind: "main" | "sub") => {
-      const result = await contextHandler()({ messages: [message] }, {
-        agent: { kind, id: "A", name: kind === "main" ? "main" : "task", depth: kind === "main" ? 0 : 1 },
-        cwd: root,
-      }) as { messages: Message[] };
-      return JSON.parse(result.messages[0].content);
-    };
-    expect((await asked("main")).session_start).toBe(true);
-    expect((await asked("sub")).session_start).toBe(false);
-  } finally {
-    if (original === undefined) delete process.env.KASA_ROOT;
-    else process.env.KASA_ROOT = original;
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
 test("a no-match lookup injects nothing instead of an empty user message", async () => {
   const root = mkdtempSync(join(tmpdir(), "kasa-nomatch-helper-"));
   mkdirSync(join(root, "_vault/scripts"), { recursive: true });

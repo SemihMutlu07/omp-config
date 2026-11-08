@@ -17,34 +17,31 @@ Unified control center for OMP execution modes (Loops), Magic Keywords, and prom
 ### 1. ⚡ Magic Keywords (OMP Yerleşik)
 - **orchestrate**: Decomposes, dispatches to parallel subagents, and verifies.
 - **workflowz**: Deterministic multi-subagent workflow (`workpool`, specialist roles).
-- **ultrathink**: Maximum reasoning effort / thinking budget.
-- **jevify**: Bulk classification via eval kernel's `judge_batch()`.
+- **jevify**: Bulk classification via eval kernel's `judge_batch()`. Model = the `modelRoles.judge` role in `config.yml` (verified: changing the role changes `judge_batch().status().model`).
 
 ### 2. 🎯 Execution Modes (Döngü Kontrolü)
 - **Loop (Test --until)**: Automatically re-submits the prompt after each turn until a test command exits with code 0 (`/loop --until 'npm test'`).
 - **Loop (3x count)**: Automatically repeats prompt for 3 iterations (`/loop 3`).
 
 ### 3. ↑ Prepend Modifiers
-- **Resume & Orient**: Three lines, each with a file path: last verified result, open task, next action.
+- **Route First**: Before the first tool call, one line `Route: direct | prewalk | primary | scout-first — <reason>`.
 
 
 ### 4. ↓ Append Modifiers
-- **Strict Verification**: Name the smallest disproof command, run it, quote the output.
-- **Check Real UI**: Exercise loading, empty, error, and interaction states at the two extreme viewports.
+- **Kanıtla** (`;sv`): smallest disproving command with quoted output; for UI work also loading/empty/error states at both extreme viewports.
+- **Kısa ve görsel** (`;kisa`): first line the answer, then only the decision-relevant part as a table or diagram.
 
 
 ### 5. 🧩 Skills
 - Curated launcher, not a full skill browser. Selecting one injects
   `Read skill://<name>/SKILL.md and follow it for this task.` before the prompt.
 - **ask-pocock**: routes to a loaded workflow; never installs a missing skill.
-- **ask-matt**: idea → spec → ticket → implement lifecycle.
+- **plan → kur → kanıtla**: loads `ask-pocock`, `grill-for-unknowns`, `gauntlet-loop` together (25 identical hand-picked combos, 17 sessions, 23 Oct–6 Nov).
 - **grill-for-unknowns**: interrogates a plan against docs before building.
-- **clarity**: plain explanation without a forced format.
-
 - **research**: cited Markdown from primary sources.
+- **research-before-build**: "X yapmak istiyorum" → önce mevcut örnekler ve seçenekler, sonra seçileni uyarla.
 
 - **gauntlet-loop**: spec → implement → independent review → runtime proof.
-- **constraint-driven**: writes `CONSTRAINTS.md` and catches a weakened quality bar in the diff.
 
 - Skills are pointers, not copied prose: the skill file stays the single source.
 
@@ -56,27 +53,23 @@ Semih to restate it.") ve L92 ("Execute authorized, reversible steps without
 another confirmation.") ile aynı davranışı emrediyordu. Aynı davranışı iki yerde
 tutmak her istekte karakter maliyeti demek.
 
-Kalan üç snippet de aynı kurala göre kırpıldı: `AGENTS.md`'nin zaten söylediği
-cümleler çıktı, yalnız kanıtlanmış delta kaldı (ör. `strict-verify` artık
-"checkbox değil" demiyor; o cümle AGENTS.md'de var).
+Bugünkü set üç snippet'tir. Eski üç snippet kaldırıldı: `strict-verify` ve
+`check-real-ui` tek `prove` davranışında birleşti; `resume-orient` yerine işe
+başlamadan rota seçen `route-first` geldi.
 
-### Snippet maliyeti (2026-10-22, gövde karakteri — frontmatter hariç)
+### Snippet maliyeti (gövde karakteri — frontmatter hariç)
 
-Snippet yalnız cockpit'te seçildiğinde prompt'a girer; dördü birlikte seçilirse
-istek başına **+1.864 karakter** (2026-10-25'te `better` silindikten sonra güncellendi).
-Kırpma öncesi (Steve Lens hariç) 1.079'du (ask-first 158 dahil).
+Snippet yalnız cockpit'te seçildiğinde prompt'a girer; üçü birlikte seçilirse
+istek başına **+1.282 karakter**.
 
-| Snippet | Yerleşim | Sıra | Gövde karakter | Tek davranış | A/B (açık / kapalı, 6 örnek) |
-|---|---|---|---|---|---|
-| Strict Verification | append | 10 | 169 | En küçük çürütücü komutu koş, çıktısını alıntıla; hata düzeltmesinde önce kırmızıyı göster | somut komut adı: 0/6 → 6/6; kırmızı→yeşil cümlesi ölçülmedi |
-| Resume & Orient | prepend | 20 | 91 | Üç satır, her satırda dosya yolu | satır başı etiket: 0/6 → 5/6 |
-| Check Real UI | append | 30 | 119 | Yükleme/boş/hata/etkileşim × iki uç viewport | durum matrisi (yükle/boş/hata): 1/6 → 6/6 |
-| Steve Lens | prepend | 50 | 1.485 | Çıkarma: dikkat bütçesi, silme testi, önce prototip | ölçülmedi — yeni; içerik değerlendirmesi bekliyor |
+| Snippet | Yerleşim | Sıra | Alias | Gövde karakter |
+|---|---|---|---|---|
+| Route First | prepend | 5 | `route` | 839 |
+| Kanıtla | append | 10 | `sv` | 308 |
+| Kısa ve görsel | append | 20 | `kisa` | 135 |
 
-Kanıt: `~/dev/analysis/2026-10-22/t6-ab/raw-{notools,after}.json` ve
-`02-cockpit.txt` / `13-badge-strict.txt`. Ölçüm `deepseek/deepseek-flash` ile,
-system = `AGENTS.md`, "araç yok" kısıtı altında: talimat takibi ölçüldü, araç
-kullanımı değil.
+Kaldırılan sürümlerin A/B sayıları (2026-10-22 ölçümü) bu sete taşınmadı; yeni
+gövdelere ait ölçüm yok.
 
 Kural: aynı davranış `AGENTS.md`'de de varsa snippet tutulmaz; tek kaynak kalır.
 
@@ -84,12 +77,12 @@ Kural: aynı davranış `AGENTS.md`'de de varsa snippet tutulmaz; tek kaynak kal
 
 Snippet dosyaları tek kaynaktır: `~/.config/opencode/plugins/prompt-snippets.ts` bu dizindeki
 `*.md` dosyalarını doğrudan okur. Her dosyanın frontmatter'ına eklenen `alias` alanı OpenCode'un
-token/komut adıdır (`sv`, `resume`, `ui`, `steve`). OMP parser'ı bu alanı yok sayar.
+token/komut adıdır (`route`, `sv`, `kisa`). OMP parser'ı bu alanı yok sayar.
 
-- Token: `hatayı düzelt ;sv` → gövde append, `;resume` / `;steve` → gövde prepend.
+- Token: `hatayı düzelt ;sv` → gövde append, `;route` → gövde prepend.
 - Komut: `/sv hatayı düzelt` — `/` menüsünde görünür.
 - Birden çok token `order` sırasıyla uygulanır; kod bloğu içindeki token'lara dokunulmaz.
-- Yeni snippet eklerken `alias` yazmazsan OpenCode dosya adını (`resume-orient`) alias kabul eder.
+- Yeni snippet eklerken `alias` yazmazsan OpenCode dosya adını (`route-first`) alias kabul eder.
 
 ## Development
 
@@ -100,7 +93,7 @@ old module in memory.
 ## Badges & Input Assembly
 
 When active, colored pills appear above the editor:
-`[⚡ orchestrate] [🎯 Loop: until test] [↑ Resume & Orient] [↓ Strict Verification]`
+`[⚡ orchestrate] [🎯 Loop: until test] [↑ Route First] [↓ Kanıtla]`
 
 When submitted:
 1. If an execution mode is selected, the message is prefixed with its command (e.g. `/loop --until 'npm test' `).
