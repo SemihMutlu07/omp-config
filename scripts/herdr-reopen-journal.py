@@ -13,6 +13,7 @@ PC restarts.
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -91,7 +92,7 @@ def save_journal(sessions):
 def omp_lines():
     try:
         raw = subprocess.check_output(
-            ["pgrep", "-a", "omp"], text=True, stderr=subprocess.DEVNULL
+            ["pgrep", "-a", "-x", "omp"], text=True, stderr=subprocess.DEVNULL
         )
     except (OSError, subprocess.CalledProcessError):
         return []
@@ -187,9 +188,13 @@ def parse_since(text):
     now = time.time()
     if text.endswith("h") and text[:-1].isdigit():
         return int((now - int(text[:-1]) * 3600) * 1000)
-    if len(text) == 5 and text[2] == ":":
+    clock = re.fullmatch(r"(\d{1,2}):(\d{2})", text)
+    if clock:
         day = time.strftime("%Y-%m-%d", time.localtime(now))
-        text = f"{day}T{text}"
+        stamp = time.mktime(time.strptime(f"{day}T{int(clock[1]):02d}:{clock[2]}", "%Y-%m-%dT%H:%M"))
+        if stamp > now:  # 23:45 asked at 00:30 means yesterday
+            stamp -= 86400
+        return int(stamp * 1000)
     for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d"):
         try:
             return int(time.mktime(time.strptime(text, fmt)) * 1000)
