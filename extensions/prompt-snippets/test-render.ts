@@ -48,8 +48,8 @@ function runTests() {
 	const sampleEnabled = new Set([
 		"kw:orchestrate",
 		"exec:loop_test",
-		"resume-orient.md",
-		"strict-verify.md",
+		"route-first.md",
+		"prove.md",
 	]);
 	const badges = formatBadges(snippets, sampleEnabled, testTheme);
 	console.log("Empty badges:", formatBadges(snippets, new Set(), testTheme));
@@ -57,8 +57,8 @@ function runTests() {
 	if (
 		!badges[0].includes("orchestrate") ||
 		!badges[0].includes("Loop: until test") ||
-		!badges[0].includes("Resume & Orient") ||
-		!badges[0].includes("Strict Verification")
+		!badges[0].includes("Route First") ||
+		!badges[0].includes("Kanıtla")
 	) {
 		throw new Error("Badge pills do not contain expected items!");
 	}
@@ -106,7 +106,7 @@ function runTests() {
 			if (w > width) throw new Error(`Line overflows at width ${width} (${w}): ${line.replace(/\x1b\[[0-9;]*m/g, "")}`);
 		}
 		const flat = lines.join(" ").replace(/\x1b\[[0-9;]*m/g, "").replace(/\s+/g, " ");
-		for (const needle of ["En küçük çürütücü komutu koş", "Üç satır", "iki viewport"]) {
+		for (const needle of ["Çürütücü komutu koş", "Okumadan önce rota", "tablo/diyagram"]) {
 			if (!flat.includes(needle)) {
 				throw new Error(`Description text lost at width ${width}: "${needle}"`);
 			}
@@ -127,7 +127,7 @@ function runTests() {
 	if (!flat90.includes("4 seçim bir sonraki mesaja")) {
 		throw new Error("Selection count line is missing or wrong");
 	}
-	if (!flat90.includes("1/4") || !flat90.includes("1/1") || !flat90.includes("1/2")) {
+	if (!flat90.includes("1/3") || !flat90.includes("1/1") || !flat90.includes("1/2")) {
 	}
 	console.log("No overflow at 60/90/120; descriptions and counters intact.");
 
@@ -146,7 +146,7 @@ function runTests() {
 		.join(" ")
 		.replace(/\x1b\[[0-9;]*m/g, "")
 		.replace(/\s+/g, " ");
-	if (!narrowFlat.includes("Check Real UI") || !narrowFlat.includes("iki viewport")) {
+	if (!narrowFlat.includes("Kısa ve görsel") || !narrowFlat.includes("tablo/diyagram")) {
 		throw new Error("Narrow viewport hides the last item's wrapped description");
 	}
 	console.log("Narrow 60x24 viewport keeps the last wrapped item fully visible.");
@@ -160,8 +160,8 @@ function runTests() {
 	console.log(`After Space on kw:orchestrate: active kw:orchestrate = ${component.working.has("kw:orchestrate")}`);
 	if (component.working.has("kw:orchestrate")) throw new Error("Expected kw:orchestrate to be toggled off!");
 
-	// Move down to execution mode section (index 4 is exec:loop_test, index 5 is exec:loop_3x)
-	for (let i = 0; i < 5; i++) component.handleInput("\x1b[B");
+	// Move down to execution mode section (3 keywords, then exec:loop_test, then exec:loop_3x)
+	for (let i = 0; i < MAGIC_KEYWORDS.length + 1; i++) component.handleInput("\x1b[B");
 	console.log(`Cursor moved to index ${component.cursor} (exec:loop_3x)`);
 
 	// exec:loop_test was active in initialEnabled. Now toggle exec:loop_3x:
@@ -212,16 +212,16 @@ function runTests() {
 
 	// 3b. Prompt assembly: skill directive goes before the user text.
 	const assembled = assemblePrompt(
-		new Set(["exec:loop_test", "kw:ultrathink", "skill:ask-pocock", "resume-orient.md", "strict-verify.md"]),
+		new Set(["exec:loop_test", "kw:orchestrate", "skill:ask-pocock", "route-first.md", "prove.md"]),
 		snippets,
 		"görevi yap",
 	);
 	const pocockInstalled = installedSkills.some((s) => s.id === "skill:ask-pocock");
 	const order = [
 		"/loop --until",
-		"ultrathink",
+		"orchestrate",
 		...(pocockInstalled ? ["Read skill://ask-pocock/SKILL.md and follow it for this task."] : []),
-		"Answer in three lines",
+		"Before your first tool call",
 		"görevi yap",
 		"smallest command",
 	];

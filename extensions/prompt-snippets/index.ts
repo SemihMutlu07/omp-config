@@ -2,11 +2,11 @@
  * Prompt Cockpit — unified management of Magic Keywords, Execution Modes (Loop), and Snippets.
  *
  * - Press alt+s or run /snippets to open the cockpit menu:
- *     - ⚡ Magic Keywords: OMP native modes (orchestrate, workflowz, ultrathink, jevify)
+ *     - ⚡ Magic Keywords: OMP native modes (orchestrate, workflowz, jevify)
  *     - 🎯 Execution Modes: Loop (--until test, 3x)
- *     - ↑ Prepend Modifiers: Task planning, orientation, prompt refinement
- *     - ↓ Append Modifiers: Strict verification, scope fence, UI check, question-first
- *     - 🧩 Skills: Curated skill launcher (ask-pocock, ask-matt, gauntlet-loop, ...)
+ *     - ↑ Prepend Modifiers: Route First (direct / prewalk / primary / scout)
+ *     - ↓ Append Modifiers: Kanıtla (verify + UI), Kısa ve görsel
+ *     - 🧩 Skills: Curated skill launcher (ask-pocock, plan → kur → kanıtla combo, ...)
  * - Space: toggle (execution modes are mutually exclusive)
  * - Tab: preview details, command syntax, or snippet body
  * - Enter: apply selections
@@ -72,19 +72,11 @@ export const MAGIC_KEYWORDS: MagicKeywordItem[] = [
 	},
 	{
 		type: "keyword",
-		id: "kw:ultrathink",
-		keyword: "ultrathink",
-		name: "ultrathink",
-		description: "Maksimum akıl yürütme bütçesi",
-		detail: "Modele izin verilen en derin akıl yürütme (reasoning/thinking) kotasını atar.",
-	},
-	{
-		type: "keyword",
 		id: "kw:jevify",
 		keyword: "jevify",
 		name: "jevify",
-		description: "judge_batch ile toplu sınıflandırma",
-		detail: "Dondurulmuş rubrik ile eval kernelinde toplu verileri (diff, dosya, log) paralel sınıflandırır.",
+		description: "judge_batch ile toplu sınıflandırma (judge rolü)",
+		detail: "Toplu verileri (diff, dosya, log) paralel sınıflandırır. Model config.yml'deki `modelRoles.judge` rolünden gelir. Rubrik önce dondurulur.",
 	},
 ];
 
@@ -113,6 +105,8 @@ export interface SkillItem {
 	type: "skill";
 	id: string;
 	skill: string;
+	/** Extra skills loaded together with `skill`, in order. */
+	also?: string[];
 	name: string;
 	description: string;
 	detail: string;
@@ -129,11 +123,12 @@ export const SKILLS: SkillItem[] = [
 	},
 	{
 		type: "skill",
-		id: "skill:ask-matt",
-		skill: "ask-matt",
-		name: "ask-matt",
-		description: "Fikir → spec → ticket → implement",
-		detail: "Yazılım işini ana akışa bağlar: grill, spec, ticket, implement, review. Tek oturumluk işte doğrudan implement.",
+		id: "skill:plan-build-prove",
+		skill: "ask-pocock",
+		also: ["grill-for-unknowns", "gauntlet-loop"],
+		name: "plan → kur → kanıtla",
+		description: "ask-pocock + grill-for-unknowns + gauntlet-loop",
+		detail: "Üç beceriyi sırayla yükler: iş akışını seç, planı sorgula, kodu spec → review → runtime kanıtıyla ilerlet.",
 	},
 	{
 		type: "skill",
@@ -145,19 +140,19 @@ export const SKILLS: SkillItem[] = [
 	},
 	{
 		type: "skill",
-		id: "skill:clarity",
-		skill: "clarity",
-		name: "clarity",
-		description: "Sade açıklama, format dayatmaz",
-		detail: "Bir konuyu jargon ve şablon olmadan açıklar. Açıklama istendiğinde kullanılır.",
-	},
-	{
-		type: "skill",
 		id: "skill:research",
 		skill: "research",
 		name: "research",
 		description: "Birincil kaynaklardan atıflı not",
 		detail: "Okuma işini arka plan ajanına verir; sonucu kaynak atıflı bir dosya olarak bırakır.",
+	},
+	{
+		type: "skill",
+		id: "skill:research-before-build",
+		skill: "research-before-build",
+		name: "research-before-build",
+		description: "Önce mevcut örnekleri araştır, seçenek göster",
+		detail: "Yeni fikir veya özelleştirmede önce çalışan örnekleri bulur, 2–3 uygun seçeneği gösterir, seçtiğini uyarlar. Sen seçmeden kurmaz.",
 	},
 	{
 		type: "skill",
@@ -167,15 +162,12 @@ export const SKILLS: SkillItem[] = [
 		description: "Spec → uygula → review → runtime",
 		detail: "Kod değişikliğinde sabit kabul kriteri, bağımsız reviewer ve gerçek yüzey doğrulamasıyla ilerler.",
 	},
-	{
-		type: "skill",
-		id: "skill:constraint-driven-development",
-		skill: "constraint-driven-development",
-		name: "constraint-driven",
-		description: "Kalite eşiğini yazılı sözleşmeye çevir",
-		detail: "CONSTRAINTS.md yazar ve diff'te eşik düşürmeyi yakalar: silinen test, eklenen @ts-ignore, düşürülen sayı. Repo başına bir kez çalışır.",
-	},
 ];
+
+/** Every skill a cockpit row loads, primary first. */
+export function skillNames(s: SkillItem): string[] {
+	return [s.skill, ...(s.also ?? [])];
+}
 
 const extensionDir = dirname(fileURLToPath(import.meta.url));
 const snippetsDir = join(extensionDir, "snippets");
@@ -190,7 +182,7 @@ export function skillExists(name: string): boolean {
 
 /** Curated skills that actually exist on disk; a missing skill must not look runnable. */
 export function availableSkills(): SkillItem[] {
-	return SKILLS.filter((s) => skillExists(s.skill));
+	return SKILLS.filter((s) => skillNames(s).every(skillExists));
 }
 
 
@@ -454,7 +446,7 @@ export function createSnippetsMenuComponent(options: SnippetsMenuOptions): Snipp
 			}
 
 		} else if (item.kind === "skill") {
-			rows.push(truncateToWidth(theme.fg("accent", `Skill · skill://${d.skill}/SKILL.md`), width));
+			rows.push(truncateToWidth(theme.fg("accent", `Skill · ${skillNames(d).map((n) => `skill://${n}/SKILL.md`).join(" + ")}`), width));
 			rows.push(theme.fg("dim", "─".repeat(Math.min(width, 40))));
 			rows.push(truncateToWidth(theme.bold("Açıklama:"), width));
 			for (const wrapped of wrapTextWithAnsi(d.detail, width)) {
@@ -683,12 +675,12 @@ export function assemblePrompt(working: Set<string>, snippets: Snippet[], text: 
 	const prependBodies = activeSnippets.filter((s) => s.placement === "prepend").map((s) => s.body);
 	const appendBodies = activeSnippets.filter((s) => s.placement === "append").map((s) => s.body);
 
-	const skillNames = activeSkills.map((s) => s.skill);
+	const skillList = [...new Set(activeSkills.flatMap(skillNames))];
 
 	const sections: string[] = [];
 	if (activeKeywords.length > 0) sections.push(activeKeywords.join("\n"));
-	if (skillNames.length > 0) {
-		sections.push(skillNames.map((name) => `Read skill://${name}/SKILL.md and follow it for this task.`).join("\n"));
+	if (skillList.length > 0) {
+		sections.push(skillList.map((name) => `Read skill://${name}/SKILL.md and follow it for this task.`).join("\n"));
 	}
 	sections.push(...prependBodies, text, ...appendBodies);
 
