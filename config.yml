@@ -4,21 +4,42 @@ composer:
 theme:
   dark: titanium
   light: light
-setupVersion: 2
+statusLine:
+  preset: custom
+  leftSegments:
+    - model
+    - mode
+    - path
+    - git
+    - pr
+  rightSegments:
+    - cost
+    - context_pct
+  separator: pipe
+  transparent: true
+display:
+  showTurnTime: true
+  subagentLivePreview: true
+tui:
+  colorfulMarkdown: false
+  motion: reduced
+error:
+  notify: "on"
+setupVersion: 3
 modelRoles:
   smol: google-antigravity/gemini-3.8-flash
   tiny: google-antigravity/gemini-3.8-flash
   memory: google-antigravity/gemini-3.8-flash
   commit: google-antigravity/gemini-3.8-flash
-  judge: google-antigravity/gemini-3.8-flash
+  judge: deepseek/deepseek-v4-flash
   task: google-antigravity/gemini-3.8-flash:high
   vision: google-antigravity/gemini-3.8-flash:medium
-  plan: anthropic/claude-sonnet-5-5:xhigh
-  slow: anthropic/claude-opus-5-5:high
-  advisor: anthropic/claude-sonnet-5-5:medium
+  plan: openai-codex/gpt-6.1-sol:xhigh
+  slow: openai-codex/gpt-6.1-sol:high
+  advisor: openai-codex/gpt-6.1-sol:medium
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
-  default: google-antigravity/gemini-3.8-flash
+  default: anthropic/claude-opus-5-5:high
 cycleOrder:
   - smol
   - default
@@ -48,9 +69,9 @@ enabledModels:
   - openai-codex/gpt-6-astra
   - openai-codex/gpt-6-luna
   - xai-oauth/grok-4.7
-  - anthropic/claude-haiku-5-5
   - anthropic/claude-sonnet-5-5
   - anthropic/claude-opus-5-5
+  - deepseek/deepseek-v4-flash
   - deepseek/deepseek-v4-pro
 modelProviderOrder:
   - google-antigravity
@@ -66,18 +87,18 @@ retry:
   fallbackOn: usage-limit
   fallbackChains:
     plan:
+      - openai-codex/gpt-6.1-sol:xhigh
       - google-antigravity/gemini-3.8-flash:high
-      - deepseek/deepseek-v4-pro:high
     slow:
-      - anthropic/claude-sonnet-5-5:high
+      - openai-codex/gpt-6.1-sol:high
       - google-antigravity/gemini-3.8-flash:high
-      - deepseek/deepseek-v4-pro:high
+      - deepseek/deepseek-v4-flash:high
     advisor:
       - google-antigravity/gemini-3.8-flash:medium
       - xai-oauth/grok-4.7
     task:
       - google-antigravity/gemini-3.8-flash:high
-      - deepseek/deepseek-v4-pro:high
+      - deepseek/deepseek-v4-flash:high
     judge:
       - xai-oauth/grok-4.7
     default:
@@ -147,3 +168,5 @@ compaction:
     anthropic/claude-sonnet-5-5: f150000
     anthropic/claude-haiku-5-5: f90000
     openai-codex/*: f150000
+update:
+  auto: true

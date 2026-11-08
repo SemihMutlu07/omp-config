@@ -136,8 +136,8 @@ Before changing a role, run the same edit tasks on the candidate model and recor
 
 Delegation permits one concurrent child and one nesting level.
 Each child receives a soft budget of 25 requests, not a token or subscription limit.
-The enabled model list contains Gemini 3.8 Flash, OpenAI Codex (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Grok 4.7 (`:high`, `:xhigh`), Claude Haiku 5.5, Sonnet 5.5, Opus 5.5, and DeepSeek v4 Pro.
-GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is disabled through `disabledProviders`. Grok 4.7 is the fallback rung for every chain.
+The enabled model list contains Gemini 3.8 Flash, OpenAI Codex (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Grok 4.7, Claude Sonnet 5.5 and Opus 5.5, and DeepSeek v4 Flash and Pro. Claude Haiku 5.5 is not enabled.
+GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is enabled. Grok 4.7 is the fallback rung for every chain.
 Do not restore `extensions/opencode-free.ts` or add those model ids back to `enabledModels`.
 OMP does not load OpenCode project or user commands.
 Model switching on request failure is enabled (`retry.modelFallback: true`, `usageAwareFallback: true`, `maxRetries: 2`, trigger `usage-limit`). Each chain in `retry.fallbackChains` ends at `xai-oauth/grok-4.7`. The `default` and `advisor` chains try Gemini 3.8 Flash medium first. `image` has an empty chain because no substitute is configured. Compaction thresholds are set at 150k (`f150000`) so sessions stay under Grok's 256k window.
