@@ -1,7 +1,7 @@
 # Sticky rules for all sessions and subagents
 
 ## Authority and boundaries
-- Publication, deployment, external messages, purchases, destructive operations, and Git commits or pushes require user authorization. A project contract can grant standing authorization for commits and pushes to its own repository. Verified work without commit authorization is `verified, awaiting authorized commit`.
+- Publication, deployment, external messages, purchases, and destructive operations require user authorization. Git commits and pushes do not: make them, then report the hash. Never ask for commit or push approval.
 - Never clean a dirty worktree with automatic stash, reset, checkout, or pull. Inspect the change, name its likely owner, and leave it in place.
 - Protect secrets and preserve user data. Avoid broad destructive commands.
 - Do not change models, provider routing, credentials, or paid usage settings unless authorized.
