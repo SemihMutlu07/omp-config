@@ -21,6 +21,8 @@ from pathlib import Path
 BEGIN = "<!-- kasa-handoff:auto:begin -->"
 END = "<!-- kasa-handoff:auto:end -->"
 ENTRY_CLIP = 240
+INTENT_KEEP = 2
+BLOCK_BUDGET = 1000
 NUDGE = (
     "Kapanış bloğu eksik. Cevabını bir kez oku; en sona tam olarak şu üç satırı ekle: "
     "`Yaptım: …`, `Kanıt: …`, `Sırada: …`. Doğrulamadığın işe bitmiş deme, yeni iş açma."
@@ -104,11 +106,33 @@ def format_entry(block: dict[str, str], now: datetime, agent: str) -> str:
     )
 
 
+def fit(lines: list[str]) -> list[str]:
+    """Newest first. The newest line never drops; old closings drop before intents."""
+    def is_intent(line: str) -> bool:
+        return "] Niyet: " in line
+
+    kept: list[str] = []
+    intents = 0
+    for line in lines:
+        if is_intent(line):
+            intents += 1
+            if intents > INTENT_KEEP:
+                continue
+        kept.append(line)
+    while len(kept) > 1 and len("\n".join(kept).encode("utf-8")) > BLOCK_BUDGET:
+        drop = next((i for i in range(len(kept) - 1, 0, -1) if not is_intent(kept[i])), len(kept) - 1)
+        del kept[drop]
+    return kept
+
+
 def apply_entry(file_text: str, entry: str) -> str:
-    fresh = f"{BEGIN}\n{entry}\n{END}"
     existing = re.search(re.escape(BEGIN) + r"[\s\S]*?" + re.escape(END), file_text)
+    earlier = [line for line in existing.group(0).split("\n") if line.startswith("- ")] if existing else []
+    if earlier and earlier[0] == entry:
+        return file_text
+    fresh = f"{BEGIN}\n" + "\n".join(fit([entry, *earlier])) + f"\n{END}"
     if existing:
-        return file_text if existing.group(0) == fresh else file_text[: existing.start()] + fresh + file_text[existing.end():]
+        return file_text[: existing.start()] + fresh + file_text[existing.end():]
     frontmatter = re.match(r"^---\n[\s\S]*?\n---\n", file_text)
     if frontmatter:
         head = file_text[: frontmatter.end()]

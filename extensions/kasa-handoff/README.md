@@ -18,12 +18,18 @@ kayıt dosyanın **başına**, frontmatter'dan hemen sonra işaretli bir blok ol
 - `turn_end`: bir turda araç çalışıp çalışmadığını hatırlar.
 - `session_stop`, ana ajan:
   - Kapanış bloğu tamamsa `$KASA_ROOT/handoff/YYYY-MM-DD.md` içindeki
-    `<!-- kasa-handoff:auto:begin -->` bloğunu son kayıtla değiştirir. Blok yoksa
+    `<!-- kasa-handoff:auto:begin -->` bloğunun başına son kaydı ekler. Blok yoksa
     frontmatter'dan sonra ekler. Dosya `KASA_ROOT` altında yoksa hiçbir şey yazmaz.
   - Blok eksikse ve tur araç kullandıysa **tek** gizli devam turu ister; ajan kendi
     cevabını okuyup üç satırı ekler. `stop_hook_active` ikinci turu engeller.
   - Alt ajanlar ve sohbet turları (araç yok) dokunulmaz.
 - Kayıt biçimi: `- HH:MM [omp] Yaptım: … | Kanıt: … | Sırada: …`, her alan 240 karakterle sınırlı.
+- Blok **birikir**: en yeni satır üstte, toplam 1000 bayta kadar. Sığmayan eski kapanış
+  satırları düşer. En yeni satır hiç düşmez.
+- `input` (yalnız ana ajan, oturum başına bir kez): kullanıcının ilk gerçek isteğini
+  (`/` ve `!` ile başlamayan) `- HH:MM [omp] Niyet: "…"` satırı olarak yazar, 160 karakterle sınırlı.
+  En yeni 2 niyet satırı kapanış satırlarından sonra düşer. Böylece sonraki oturum yalnız son
+  turun nasıl bittiğini değil, ne istendiğini de görür.
 - Yazma atomiktir (aynı dizinde geçici dosya + `rename`). Aynı kayıt ikinci kez
   geldiğinde dosya değişmez.
 

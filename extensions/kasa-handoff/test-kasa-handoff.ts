@@ -6,6 +6,7 @@ import extension, {
 	applyEntry,
 	assistantText,
 	formatEntry,
+	formatIntent,
 	parseClosingBlock,
 	writeEntry,
 } from "./index.js";
@@ -83,10 +84,10 @@ describe("handoff write", () => {
 		expect(next).toContain("# Devir\n\nGövde.");
 	});
 
-	test("replaces the block and leaves the rest intact", () => {
+	test("accumulates earlier lines and leaves the rest intact", () => {
 		const first = applyEntry("---\ntitle: D\n---\n\n# D\n", "- 20:00 [omp] Yaptım: a | Kanıt: b | Sırada: c");
 		const second = applyEntry(first, "- 20:05 [omp] Yaptım: d | Kanıt: e | Sırada: yok");
-		expect(second).not.toContain("Yaptım: a");
+		expect(second).toContain("Yaptım: a");
 		expect(second).toContain("Yaptım: d");
 		expect(second).toContain("# D");
 	});
@@ -147,5 +148,74 @@ describe("session stop handler", () => {
 		registered.get("turn_end")?.({ toolResults: [{}] }, sub);
 		expect(registered.get("session_stop")?.({ last_assistant_message: message(blockText), stop_hook_active: false }, sub))
 			.toBeUndefined();
+	});
+});
+
+describe("accumulation and intent", () => {
+	const stamp = new Date(2026, 10, 9, 10, 0);
+	const close = (tag: string) => formatEntry({ done: tag, proof: "p", next: "n" }, stamp, "omp");
+
+	test("earlier lines stay, newest first", () => {
+		const once = applyEntry("---\ntitle: D\n---\n", close("bir"));
+		const twice = applyEntry(once, close("iki"));
+		expect(twice.indexOf("Yaptım: iki")).toBeLessThan(twice.indexOf("Yaptım: bir"));
+	});
+
+	test("block stays within the byte budget and keeps the newest line", () => {
+		let text = "---\ntitle: D\n---\n";
+		const long = "x".repeat(230);
+		for (let i = 0; i < 12; i++) text = applyEntry(text, close(`${i}-${long}`));
+		const block = /<!-- kasa-handoff:auto:begin -->\n([\s\S]*?)\n<!-- kasa-handoff:auto:end -->/.exec(text)?.[1] ?? "";
+		expect(Buffer.byteLength(block)).toBeLessThanOrEqual(1000);
+		expect(block).toContain("Yaptım: 11-");
+	});
+
+	test("only the two newest intents stay and they outlive old closings", () => {
+		let text = "---\ntitle: D\n---\n";
+		text = applyEntry(text, formatIntent("birinci istek", stamp, "omp"));
+		text = applyEntry(text, formatIntent("ikinci istek", stamp, "omp"));
+		text = applyEntry(text, formatIntent("üçüncü istek", stamp, "omp"));
+		for (let i = 0; i < 12; i++) text = applyEntry(text, close(`${i}-${"y".repeat(230)}`));
+		expect(text).not.toContain("birinci istek");
+		expect(text).toContain("ikinci istek");
+		expect(text).toContain("üçüncü istek");
+	});
+
+	test("intent clips to one line", () => {
+		const line = formatIntent(`a\n\nb ${"z".repeat(500)}`, stamp, "omp");
+		expect(line.includes("\n")).toBe(false);
+		expect(line.length).toBeLessThan(220);
+	});
+
+	test("input handler saves only the first plain prompt of a session", () => {
+		const { registered, main } = handlers();
+		const root = vault();
+		process.env.KASA_ROOT = root;
+		try {
+			const input = registered.get("input");
+			input?.({ text: "/model", source: "interactive" }, main);
+			input?.({ text: "ilk gerçek istek", source: "interactive" }, main);
+			input?.({ text: "ikinci mesaj", source: "interactive" }, main);
+			const file = readFileSync(join(root, "handoff", `${new Date().toISOString().slice(0, 10)}.md`), "utf8");
+			expect(file).toContain('Niyet: "ilk gerçek istek"');
+			expect(file).not.toContain("ikinci mesaj");
+			registered.get("session_start")?.({}, main);
+			input?.({ text: "yeni oturum istegi", source: "interactive" }, main);
+			expect(readFileSync(join(root, "handoff", `${new Date().toISOString().slice(0, 10)}.md`), "utf8")).toContain("yeni oturum istegi");
+		} finally {
+			delete process.env.KASA_ROOT;
+		}
+	});
+
+	test("subagent input is ignored", () => {
+		const { registered, sub } = handlers();
+		const root = vault();
+		process.env.KASA_ROOT = root;
+		try {
+			registered.get("input")?.({ text: "alt ajan", source: "interactive" }, sub);
+			expect(() => readFileSync(join(root, "handoff", `${new Date().toISOString().slice(0, 10)}.md`), "utf8")).toThrow();
+		} finally {
+			delete process.env.KASA_ROOT;
+		}
 	});
 });
