@@ -20,6 +20,8 @@ statusLine:
 display:
   showTurnTime: true
   subagentLivePreview: true
+extensionRenderers:
+  transcriptPresenters: true
 tui:
   colorfulMarkdown: false
   motion: reduced

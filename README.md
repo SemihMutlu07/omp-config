@@ -12,6 +12,21 @@ bildirimi açıktır. Bunlar yerleşik OMP ayarlarıdır; yeni eklenti gerektirm
 Gerçek görünüm `/settings` → Appearance içinde denetlenebilir. Mevcut
 `Alt+S` / `/cockpit` snippet ve skill menüsü değişmemiştir.
 
+### Tek satırlık araç adımları
+
+`extensions/compact-tools.ts`, ana konuşmadaki araç çağrılarını tek satır
+gösterir. Hata çağrıları da tek satır kalır. Tern hata simgesini korur.
+Tern’de araç başlığına tıklamak tam kartı açar. Yeniden tıklamak kartı katlar.
+OMP 18.18.6 ile Tern 0.9.13 denemesinde `Ctrl+O` bu kartları topluca açmadı.
+
+`extensionRenderers.transcriptPresenters: true` bu görünümü etkinleştirir.
+`setup.sh`, eklentiyi mevcut extensions dizinine bağlar.
+Yeni eklenti yeni OMP süreçlerinde yüklenir. Açık süreçler yeniden başlatılmaz.
+Eklenti yalnız görünümü değiştirir. Oturum mesajlarını ve model bağlamını değiştirmez.
+Düşünme metni, alt ajan görünümleri ve transcript replay mevcut görünümü korur.
+Yerleşik görünüme dönmek için `extensionRenderers.transcriptPresenters` değerini
+`false` yapın.
+
 ---
 
 ## 🏗 Mimari ve Durum Ayrımı (State Separation)
