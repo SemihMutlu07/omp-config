@@ -13,6 +13,7 @@ statusLine:
     - git
     - pr
   rightSegments:
+    - usage
     - cost
     - context_pct
   separator: pipe

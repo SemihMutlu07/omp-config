@@ -41,6 +41,24 @@ ulaştı ve çalışan oturumu `Cost cap reached` hatasıyla kesti.
 `--max-cost` verilmedikçe sert sınır yoktur; `--warn-cost` uyarı eşiğini
 değiştirir.
 
+### Durum çubuğunda maliyet ve kota
+
+`statusLine.rightSegments` üç segment taşır: `usage`, `cost`, `context_pct`.
+
+`cost` segmenti abonelikte dolar göstermez. Ölçülen maliyet sıfırsa `(sub)`
+yazar. Alt ajan maliyeti varsa `S0.38 (+1.27)` biçiminde abonelik işaretiyle
+yazar. API anahtarıyla ödenen modelde `$0.42` yazar.
+
+`usage` segmenti etkin hesabın kota pencerelerini yüzde ve sıfırlanma süresiyle
+gösterir: `⏱ Pro · 5h 32% (1h 11m) · 1d 44% (5h 10m) · 7d 68% (2d 4h)`.
+Sayılar `omp usage` ile aynı kaynaktan gelir. Kota penceresi bildirmeyen
+sağlayıcıda (ör. DeepSeek API anahtarı) gösterilecek veri yoktur.
+
+Bu iki segment OMP'de yerleşiktir. Eklenti veya kod gerekmez.
+Çizimi `omp gallery --segment usage --plain` ve `omp gallery --segment cost --plain`
+doğrular.
+
+
 `compaction.thresholdTokens` ve `compaction.modelThresholds` **sert istek
 bağlam sınırı değildir**. Sıkıştırma yapılamadığında veya ertelendiğinde
 eşik üstü istek gönderilebilir. Kurulu katmanda yapılandırılabilir sert
@@ -147,32 +165,40 @@ omp login
 * **xAI SuperGrok:** Grok 4.7 through `xai-oauth`.
 
 
-### Model routing (updated 2026-11-02)
+### Model routing (updated 2026-11-10)
 
 OMP is the primary coding harness.
 `config.yml` holds the model assignments. Prompts and subagents use role aliases.
 
 | Work | Role or agent | Model |
 |---|---|---|
-| Main chat | `default` | Claude Haiku 5.5 xhigh |
-| Subagent implementation | `task` role; `task` agent | Gemini 3.8 Flash high; Gemini 3.8 Flash max |
-| Small work, commit text, memory | `smol`, `tiny`, `commit`, `memory`, `judge` | Gemini 3.8 Flash |
-| Read-only research and mechanical work | `scout`, `sonic` | Gemini 3.8 Flash max |
-| Planning and difficult one-shots | `plan`, `slow`, `prewalk.from` | Claude Sonnet 5.5 xhigh |
-| Correctness and security review | `reviewer`, `security-reviewer` | Gemini 3.8 Flash max |
-| Image analysis and image role | `vision`, `image` | Gemini 3.8 Flash medium; Gemini 3.1 Flash Image |
-| Passive review, enabled | `advisor` | Claude Sonnet 5.5 medium |
+| Main chat | `default` | DeepSeek v4 Flash |
+| Subagent implementation | `task` role; `task` agent | Grok 4.6 high |
+| Small work, commit text, memory | `smol`, `tiny`, `commit`, `memory` | Grok 4.7 |
+| Judge calls | `judge` | DeepSeek v4 Flash |
+| Read-only research and mechanical work | `scout`; `sonic` | Grok 4.6 high; Grok 4.7 |
+| Planning and difficult one-shots | `plan`, `slow`, `prewalk.from` | GPT-6.1 Sol xhigh; GPT-6.1 Sol high |
+| Correctness and security review | `reviewer`, `security-reviewer` | `@slow` (GPT-6.1 Sol high) |
+| Image analysis | `vision` | Claude Sonnet 5.5 |
+| Image generation | `image` | none: role removed 2026-11-10 |
+| Passive review, enabled | `advisor` | GPT-6.1 Sol medium |
+
+`google-antigravity` is paused by OMP itself from 18.18.5 on:
+`ProviderDisabledError: ... Google may restrict accounts that use Antigravity outside its own apps`.
+Gemini models left the allowed list for that reason, not from a config edit.
+The 18.18.3 build still serves `gemini-3.8-flash`.
+Do not add Gemini roles back without either a provider fix or a downgrade.
 
 Use OMP plan mode for read-only planning; a model role does not restrict tools.
 
-Prewalk is opt-in: `prewalk.enabled` is `false`. Use `/prewalk` or `--prewalk` per session. The session plans on `prewalk.from` (`@plan`, Sonnet 5.5 xhigh) and hands edits to `prewalk.into` (`@smol`, Gemini 3.8 Flash) at the first edit. `prewalk.auto` is `suggest`: the `judge` role only suggests prewalk for each new task. Do not set `prewalk.auto` to `on` until a live comparison shows better cost and pass rate. `task.prewalk` stays `false`: the generic `task` agent already targets `smol`, and OMP skips prewalk when the start and target models match.
+Prewalk is opt-in: `prewalk.enabled` is `false`. Use `/prewalk` or `--prewalk` per session. The session plans on `prewalk.from` (`@plan`, GPT-6.1 Sol xhigh) and hands edits to `prewalk.into` (`@smol`, Grok 4.7) at the first edit. `prewalk.auto` is `suggest`: the `judge` role only suggests prewalk for each new task. Do not set `prewalk.auto` to `on` until a live comparison shows better cost and pass rate. `task.prewalk` stays `false`: the generic `task` agent already targets `smol`, and OMP skips prewalk when the start and target models match.
 
 Before changing a role, run the same edit tasks on the candidate model and record pass rate, cost, and time. `edit.mode` stays `hashline`.
 
 Delegation permits one concurrent child and one nesting level.
 Each child receives a soft budget of 25 requests, not a token or subscription limit.
-The enabled model list contains Gemini 3.8 Flash, OpenAI Codex (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Grok 4.7, Claude Sonnet 5.5 and Opus 5.5, and DeepSeek Flash, v4 Flash and Pro. Claude Haiku 5.5 is not enabled.
-GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is enabled. Grok 4.7 is the fallback rung for every chain.
+The enabled model list contains Grok 4.7 and Grok 4.6, Claude Sonnet 5.5, Opus 5.5 and Fable 5.2, GPT-6.1 Sol, GPT-6 Astra and GPT-6 Luna, and DeepSeek Flash, v4 Flash and Pro. Claude Haiku 5.5 is not enabled.
+GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is enabled. Grok 4.6 and Grok 4.7 fill the fallback chains.
 Do not restore `extensions/opencode-free.ts` or add those model ids back to `enabledModels`.
 OMP does not load OpenCode project or user commands.
 Model switching is off (`retry.modelFallback: false`, `retry.usageAwareFallback: false`). A usage-limit stops the turn with a visible error and does not change the model. `retry.fallbackOn` stays `usage-limit` but fires nothing while both switches are off. Compaction thresholds are set at 150k (`f150000`).
