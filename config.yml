@@ -41,7 +41,7 @@ modelRoles:
   advisor: openai-codex/gpt-6.1-sol:medium
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
-  default: anthropic/claude-opus-5-5:high
+  default: deepseek/deepseek-flash
 cycleOrder:
   - smol
   - default
@@ -53,6 +53,7 @@ task:
     reviewer: "@slow"
     security-reviewer: "@slow"
   maxConcurrency: 6
+  perCallModel: true
   maxRecursionDepth: 1
   softRequestBudget: 25
   enableEffort: true
@@ -73,8 +74,10 @@ enabledModels:
   - xai-oauth/grok-4.7
   - anthropic/claude-sonnet-5-5
   - anthropic/claude-opus-5-5
+  - anthropic/claude-fable-5-2
   - deepseek/deepseek-v4-flash
   - deepseek/deepseek-v4-pro
+  - deepseek/deepseek-flash
 modelProviderOrder:
   - google-antigravity
   - openai-codex
@@ -83,8 +86,8 @@ modelProviderOrder:
   - xai
   - deepseek
 retry:
-  usageAwareFallback: true
-  modelFallback: true
+  usageAwareFallback: false
+  modelFallback: false
   maxRetries: 2
   fallbackOn: usage-limit
   fallbackChains:
@@ -158,6 +161,9 @@ prewalk:
   into: "@smol"
   auto: suggest
   autoTarget: "@smol"
+session:
+  warnCost: 10
+  maxCost: 25
 compaction:
   thresholdTokens: 150000
   modelThresholds:

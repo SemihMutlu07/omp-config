@@ -27,6 +27,23 @@ Düşünme metni, alt ajan görünümleri ve transcript replay mevcut görünüm
 Yerleşik görünüme dönmek için `extensionRenderers.transcriptPresenters` değerini
 `false` yapın.
 
+### Oturum maliyet sınırı
+
+`config.yml` içindeki `session.warnCost: 10`, oturum ağacının API-eşdeğeri
+maliyeti $10'a ulaştığında uyarır. `session.maxCost: 25`, sayaç $25'e
+ulaştıktan sonra yeni model isteklerini reddeder. OMP 18.18.6'nın yerleşik
+`CostGate` mekanizması kullanılır; yeni süreç veya eklenti yoktur.
+Alt ajanlar aynı kapıyı paylaşır; devam ettirilen oturum geçmiş maliyeti korur.
+Devam eden istekler tamamlanıp sınırı aşabilir. Bu, gerçek fatura üst sınırı
+değildir; abonelik sağlayıcılarında liste fiyatı tahminini sınırlar.
+Tek koşu için `--warn-cost` / `--max-cost` bu değerleri değiştirebilir.
+
+`compaction.thresholdTokens` ve `compaction.modelThresholds` **sert istek
+bağlam sınırı değildir**. Sıkıştırma yapılamadığında veya ertelendiğinde
+eşik üstü istek gönderilebilir. Kurulu katmanda yapılandırılabilir sert
+bağlam reddi bulunmadığından bu hedef **BLOCKED** kalır.
+`settings.json`, mevcut YAML varken etkin ayar kaynağı değildir.
+
 ---
 
 ## 🏗 Mimari ve Durum Ayrımı (State Separation)
@@ -151,11 +168,11 @@ Before changing a role, run the same edit tasks on the candidate model and recor
 
 Delegation permits one concurrent child and one nesting level.
 Each child receives a soft budget of 25 requests, not a token or subscription limit.
-The enabled model list contains Gemini 3.8 Flash, OpenAI Codex (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Grok 4.7, Claude Sonnet 5.5 and Opus 5.5, and DeepSeek v4 Flash and Pro. Claude Haiku 5.5 is not enabled.
+The enabled model list contains Gemini 3.8 Flash, OpenAI Codex (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Grok 4.7, Claude Sonnet 5.5 and Opus 5.5, and DeepSeek Flash, v4 Flash and Pro. Claude Haiku 5.5 is not enabled.
 GLM 5.3 Flash and the `opencode-free` provider remain removed. DeepSeek is enabled. Grok 4.7 is the fallback rung for every chain.
 Do not restore `extensions/opencode-free.ts` or add those model ids back to `enabledModels`.
 OMP does not load OpenCode project or user commands.
-Model switching on request failure is enabled (`retry.modelFallback: true`, `usageAwareFallback: true`, `maxRetries: 2`, trigger `usage-limit`). Each chain in `retry.fallbackChains` ends at `xai-oauth/grok-4.7`. The `default` and `advisor` chains try Gemini 3.8 Flash medium first. `image` has an empty chain because no substitute is configured. Compaction thresholds are set at 150k (`f150000`) so sessions stay under Grok's 256k window.
+Model switching is off (`retry.modelFallback: false`, `retry.usageAwareFallback: false`). A usage-limit stops the turn with a visible error and does not change the model. `retry.fallbackOn` stays `usage-limit` but fires nothing while both switches are off. Compaction thresholds are set at 150k (`f150000`).
 Idle recaps and cache warming remain disabled. The advisor is enabled with `continueSeverity: blocker`.
 API errors permit two retries.
 
