@@ -160,9 +160,9 @@ Yeni cihazda model sağlayıcılarını bağlayın:
 ```bash
 omp login
 ```
-* **Google Antigravity:** Gemini 3.8 Flash
+* **Google Antigravity:** Gemini 3.8 Flash. OMP 18.18.5 ve sonrası bu sağlayıcıyı durdurur; giriş kaydı durur ama model listelenmez
 * **OpenAI Codex:** GPT-6 Astra, GPT-6 Luna, GPT-6.1 Sol
-* **xAI SuperGrok:** Grok 4.7 through `xai-oauth`.
+* **xAI SuperGrok:** Grok 4.7 ve Grok 4.6 through `xai-oauth`.
 
 
 ### Model routing (updated 2026-11-10)
