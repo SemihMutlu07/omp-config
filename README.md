@@ -27,16 +27,19 @@ Düşünme metni, alt ajan görünümleri ve transcript replay mevcut görünüm
 Yerleşik görünüme dönmek için `extensionRenderers.transcriptPresenters` değerini
 `false` yapın.
 
-### Oturum maliyet sınırı
+### Oturum maliyet uyarısı
 
 `config.yml` içindeki `session.warnCost: 10`, oturum ağacının API-eşdeğeri
-maliyeti $10'a ulaştığında uyarır. `session.maxCost: 25`, sayaç $25'e
-ulaştıktan sonra yeni model isteklerini reddeder. OMP 18.18.6'nın yerleşik
+maliyeti $10'a ulaştığında bir kez uyarır. OMP 18.18.6'nın yerleşik
 `CostGate` mekanizması kullanılır; yeni süreç veya eklenti yoktur.
-Alt ajanlar aynı kapıyı paylaşır; devam ettirilen oturum geçmiş maliyeti korur.
-Devam eden istekler tamamlanıp sınırı aşabilir. Bu, gerçek fatura üst sınırı
-değildir; abonelik sağlayıcılarında liste fiyatı tahminini sınırlar.
-Tek koşu için `--warn-cost` / `--max-cost` bu değerleri değiştirebilir.
+Alt ajanlar aynı sayacı paylaşır.
+
+`session.maxCost` **yoktur** (2026-11-10'da kaldırıldı, Semih'in kararı).
+Gerekçe: abonelik planlarında liste fiyatı tahmini gerçek fatura değildir.
+Bu yüzden sayılan dolar oturumu durdurmamalıdır. O gün sayaç $25.23'e
+ulaştı ve çalışan oturumu `Cost cap reached` hatasıyla kesti.
+`--max-cost` verilmedikçe sert sınır yoktur; `--warn-cost` uyarı eşiğini
+değiştirir.
 
 `compaction.thresholdTokens` ve `compaction.modelThresholds` **sert istek
 bağlam sınırı değildir**. Sıkıştırma yapılamadığında veya ertelendiğinde

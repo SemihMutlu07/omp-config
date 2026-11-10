@@ -41,7 +41,7 @@ modelRoles:
   advisor: openai-codex/gpt-6.1-sol:medium
   image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
-  default: deepseek/deepseek-flash
+  default: deepseek/deepseek-v4-flash
 cycleOrder:
   - smol
   - default
@@ -163,7 +163,6 @@ prewalk:
   autoTarget: "@smol"
 session:
   warnCost: 10
-  maxCost: 25
 compaction:
   thresholdTokens: 150000
   modelThresholds:
