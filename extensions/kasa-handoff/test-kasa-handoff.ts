@@ -5,6 +5,7 @@ import { join } from "node:path";
 import extension, {
 	applyEntry,
 	assistantText,
+	classifyNext,
 	formatEntry,
 	formatIntent,
 	parseClosingBlock,
@@ -148,6 +149,103 @@ describe("session stop handler", () => {
 		registered.get("turn_end")?.({ toolResults: [{}] }, sub);
 		expect(registered.get("session_stop")?.({ last_assistant_message: message(blockText), stop_hook_active: false }, sub))
 			.toBeUndefined();
+	});
+});
+
+describe("next-step gate", () => {
+	const withNext = (next: string) =>
+		message(["İş bitti.", "Yaptım: x", "Kanıt: y", `Sırada: ${next}`].join("\n"));
+	const park = (registered: Map<string, Handler>, main: Context) => {
+		const root = vault();
+		process.env.KASA_ROOT = root;
+		registered.get("turn_end")?.({ toolResults: [{}] }, main);
+		return root;
+	};
+
+	test("finished, human-only, defaulted and agent-owned steps pass", () => {
+		expect(classifyNext("yok")).toEqual({ ok: true, owner: "none" });
+		expect(classifyNext("bitti.")).toEqual({ ok: true, owner: "none" });
+		expect(classifyNext("Semih OMP içinde `/mcp reauth notion` çalıştırır").owner).toBe("human");
+		expect(classifyNext("Telefonda Tailscale'i aç").owner).toBe("human");
+		expect(classifyNext("Cloudflare'a taşıma; varsayılan: ayrı iş").owner).toBe("default");
+		expect(classifyNext("Sonraki turda testi koşarım").owner).toBe("agent");
+	});
+
+	test("a hand-back is open even when it opens with yok", () => {
+		expect(classifyNext("yok — K-1 satırını eklemek senin kararın").ok).toBe(false);
+		expect(classifyNext("Faz 1'i benim yazmam mı, senin kurman mı — tek kelime yeter").ok).toBe(false);
+		expect(classifyNext("Kasa doctor temizliği ve Grok hata analizi").ok).toBe(false);
+		expect(classifyNext("Telefonda token gireyim mi?").ok).toBe(false);
+		expect(classifyNext("").owner).toBe("none");
+	});
+
+	test("an open step blocks once, then the repaired run passes", () => {
+		const { registered, main } = handlers();
+		park(registered, main);
+		try {
+			const blocked = registered.get("session_stop")?.(
+				{ last_assistant_message: withNext("Karar sende: hangi aday skill olsun"), stop_hook_active: false },
+				main,
+			) as { decision?: string; reason?: string } | undefined;
+			expect(blocked?.decision).toBe("block");
+			expect(blocked?.reason).toContain("Sırada");
+			const second = registered.get("session_stop")?.(
+				{ last_assistant_message: withNext("Karar sende: hangi aday skill olsun"), stop_hook_active: false },
+				main,
+			);
+			expect(second).toBeUndefined();
+			registered.get("agent_start")?.({}, main);
+			expect(
+				(registered.get("session_stop")?.(
+					{ last_assistant_message: withNext("Karar sende: hangi aday"), stop_hook_active: false },
+					main,
+				) as { decision?: string } | undefined)?.decision,
+			).toBe("block");
+		} finally {
+			delete process.env.KASA_ROOT;
+		}
+	});
+
+	test("a closed next step is recorded without a repair turn", () => {
+		const { registered, main } = handlers();
+		const root = park(registered, main);
+		try {
+			expect(
+				registered.get("session_stop")?.(
+					{ last_assistant_message: withNext("varsayılan: ayrı iş"), stop_hook_active: false },
+					main,
+				),
+			).toBeUndefined();
+			expect(readFileSync(join(root, "handoff", `${new Date().toISOString().slice(0, 10)}.md`), "utf8")).toContain(
+				"varsayılan: ayrı iş",
+			);
+		} finally {
+			delete process.env.KASA_ROOT;
+		}
+	});
+
+	test("a chat turn still blocks an ownerless next step", () => {
+		const { registered, main } = handlers();
+		const root = vault();
+		process.env.KASA_ROOT = root;
+		try {
+			registered.get("turn_end")?.({ toolResults: [] }, main);
+			expect(
+				(registered.get("session_stop")?.(
+					{ last_assistant_message: withNext("Karar sende: hangisi"), stop_hook_active: false },
+					main,
+				) as { decision?: string } | undefined)?.decision,
+			).toBe("block");
+			registered.get("agent_start")?.({}, main);
+			expect(
+				registered.get("session_stop")?.(
+					{ last_assistant_message: withNext("yok"), stop_hook_active: false },
+					main,
+				),
+			).toBeUndefined();
+		} finally {
+			delete process.env.KASA_ROOT;
+		}
 	});
 });
 

@@ -22,7 +22,13 @@ kayıt dosyanın **başına**, frontmatter'dan hemen sonra işaretli bir blok ol
     frontmatter'dan sonra ekler. Dosya `KASA_ROOT` altında yoksa hiçbir şey yazmaz.
   - Blok eksikse ve tur araç kullandıysa **tek** gizli devam turu ister; ajan kendi
     cevabını okuyup üç satırı ekler. `stop_hook_active` ikinci turu engeller.
-  - Alt ajanlar ve sohbet turları (araç yok) dokunulmaz.
+  - **Sırada kapısı**: `Sırada` satırı sıradaki işin sahibini söylemek zorundadır.
+    Kabul edilen biçimler: `yok`, `varsayılan: …`, cihaz/kimlik işi (`Sen: …`), veya
+    ajanın kendi adımı (`Sonraki turda …`). Bunların hiçbiri yoksa tur
+    `decision: "block"` ile bir kez geri gönderilir; ajan adımı kendisi koşar, gerçek
+    karar için `ask` formunu varsayılan seçili açar, ya da işin bittiğini yazar.
+    Blok her koşuda (prompt başına) **en fazla bir kez** çalışır.
+  - Alt ajanlar dokunulmaz.
 - Kayıt biçimi: `- HH:MM [omp] Yaptım: … | Kanıt: … | Sırada: …`, her alan 240 karakterle sınırlı.
 - Blok **birikir**: en yeni satır üstte, toplam 1000 bayta kadar. Sığmayan eski kapanış
   satırları düşer. En yeni satır hiç düşmez.
