@@ -29,17 +29,16 @@ error:
   notify: "on"
 setupVersion: 3
 modelRoles:
-  smol: google-antigravity/gemini-3.8-flash
-  tiny: google-antigravity/gemini-3.8-flash
-  memory: google-antigravity/gemini-3.8-flash
-  commit: google-antigravity/gemini-3.8-flash
+  smol: xai-oauth/grok-4.7
+  tiny: xai-oauth/grok-4.7
+  memory: xai-oauth/grok-4.7
+  commit: xai-oauth/grok-4.7
   judge: deepseek/deepseek-v4-flash
-  task: google-antigravity/gemini-3.8-flash:high
-  vision: google-antigravity/gemini-3.8-flash:medium
+  task: xai-oauth/grok-4.6:high
+  vision: anthropic/claude-sonnet-5-5
   plan: openai-codex/gpt-6.1-sol:xhigh
   slow: openai-codex/gpt-6.1-sol:high
   advisor: openai-codex/gpt-6.1-sol:medium
-  image: google-antigravity/gemini-3.1-flash-image
   web: web/exa
   default: deepseek/deepseek-v4-flash
 cycleOrder:
@@ -47,9 +46,9 @@ cycleOrder:
   - default
 task:
   agentModelOverrides:
-    scout: google-antigravity/gemini-3.8-flash:max
-    sonic: google-antigravity/gemini-3.8-flash:max
-    task: google-antigravity/gemini-3.8-flash:max
+    scout: xai-oauth/grok-4.6:high
+    sonic: xai-oauth/grok-4.7
+    task: xai-oauth/grok-4.6:high
     reviewer: "@slow"
     security-reviewer: "@slow"
   maxConcurrency: 6
@@ -67,11 +66,8 @@ startup:
   showSplash: false
 defaultThinkingLevel: xhigh
 enabledModels:
-  - google-antigravity/gemini-3.8-flash
-  - openai-codex/gpt-6.1-sol
-  - openai-codex/gpt-6-astra
-  - openai-codex/gpt-6-luna
   - xai-oauth/grok-4.7
+  - xai-oauth/grok-4.6
   - anthropic/claude-sonnet-5-5
   - anthropic/claude-opus-5-5
   - anthropic/claude-fable-5-2
@@ -79,7 +75,6 @@ enabledModels:
   - deepseek/deepseek-v4-pro
   - deepseek/deepseek-flash
 modelProviderOrder:
-  - google-antigravity
   - openai-codex
   - anthropic
   - xai-oauth
@@ -93,33 +88,30 @@ retry:
   fallbackChains:
     plan:
       - openai-codex/gpt-6.1-sol:xhigh
-      - google-antigravity/gemini-3.8-flash:high
+      - xai-oauth/grok-4.6:high
     slow:
       - openai-codex/gpt-6.1-sol:high
-      - google-antigravity/gemini-3.8-flash:high
+      - xai-oauth/grok-4.6:high
       - deepseek/deepseek-v4-flash:high
     advisor:
-      - google-antigravity/gemini-3.8-flash:medium
       - xai-oauth/grok-4.7
     task:
-      - google-antigravity/gemini-3.8-flash:high
+      - xai-oauth/grok-4.6:high
       - deepseek/deepseek-v4-flash:high
     judge:
       - xai-oauth/grok-4.7
     default:
-      - google-antigravity/gemini-3.8-flash:medium
       - xai-oauth/grok-4.7
     smol:
-      - xai-oauth/grok-4.7
+      - deepseek/deepseek-v4-flash
     tiny:
-      - xai-oauth/grok-4.7
+      - deepseek/deepseek-v4-flash
     memory:
-      - xai-oauth/grok-4.7
+      - deepseek/deepseek-v4-flash
     commit:
-      - xai-oauth/grok-4.7
+      - deepseek/deepseek-v4-flash
     vision:
       - xai-oauth/grok-4.7
-    image: []
   waitForUsageReset: true
 skills:
   customDirectories: []
@@ -168,8 +160,6 @@ compaction:
   modelThresholds:
     xai-oauth/*: f150000
     xai-oauth/grok-4.7: f150000
-    google-antigravity/*: f150000
-    google-antigravity/gemini-3.8-flash: f150000
     anthropic/*: f150000
     anthropic/claude-opus-5-5: f120000
     anthropic/claude-sonnet-5-5: f150000
