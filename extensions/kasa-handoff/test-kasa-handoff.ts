@@ -345,6 +345,16 @@ describe("accumulation and intent", () => {
 		expect(block).toContain("10:02");
 		expect(block).toContain("Niyet:");
 	});
+
+	test("long Yaptım and Kanıt shrink before Sırada", () => {
+		const next = "varsayılan: 1 numaraya evet dersen önce BOARD kaydını okurum. Sonra açık iş listesini test ile eklerim.";
+		const long = "ş".repeat(240);
+		const closing = formatEntry({ done: long, proof: long, next }, stamp, "omp");
+		expect(closing.endsWith(`| Sırada: ${next}`)).toBe(true);
+		expect(closing).toContain("Yaptım: ş");
+		expect(closing).toContain("Kanıt: ş");
+		expect(Buffer.byteLength(closing)).toBeLessThanOrEqual(450);
+	});
 });
 
 describe("concurrent writers", () => {

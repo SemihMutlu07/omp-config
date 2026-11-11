@@ -27,6 +27,7 @@ const INTENT_KEEP = 2;
 const BLOCK_BUDGET = 1000;
 // Per-line byte caps: newest closing + one intent always fit the budget, even in 2-byte Turkish text.
 const ENTRY_BYTES = 450;
+const NEXT_BYTES = 200;
 const INTENT_BYTES = 360;
 const NUDGE =
 	"Kapanış bloğu eksik. Cevabını bir kez oku; en sona tam olarak şu üç satırı ekle: " +
@@ -115,9 +116,17 @@ export function clampBytes(line: string, max: number): string {
 	return `${out}…`;
 }
 
+/**
+ * Over budget, Yaptım and Kanıt shrink first: the next session acts on Sırada.
+ * Sırada keeps up to NEXT_BYTES; Kanıt keeps at least half of what is left.
+ */
 export function formatEntry(block: ClosingBlock, now: Date, agent: string): string {
-	const line = `- ${clock(now)} [${agent}] Yaptım: ${block.done} | Kanıt: ${block.proof} | Sırada: ${block.next}`;
-	return clampBytes(line, ENTRY_BYTES);
+	const head = `- ${clock(now)} [${agent}] Yaptım: `;
+	const next = clampBytes(block.next, NEXT_BYTES);
+	const room = ENTRY_BYTES - Buffer.byteLength(`${head} | Kanıt:  | Sırada: ${next}`, "utf8");
+	const proof = clampBytes(block.proof, Math.max(room - Buffer.byteLength(block.done, "utf8"), Math.floor(room / 2)));
+	const done = clampBytes(block.done, room - Buffer.byteLength(proof, "utf8"));
+	return clampBytes(`${head}${done} | Kanıt: ${proof} | Sırada: ${next}`, ENTRY_BYTES);
 }
 
 /** The user's first prompt of a session, one line, clipped. */

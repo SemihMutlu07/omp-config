@@ -25,6 +25,7 @@ ENTRY_CLIP = 240
 INTENT_KEEP = 2
 BLOCK_BUDGET = 1000
 ENTRY_BYTES = 450
+NEXT_BYTES = 200
 NUDGE = (
     "Kapanış bloğu eksik. Cevabını bir kez oku; en sona tam olarak şu üç satırı ekle: "
     "`Yaptım: …`, `Kanıt: …`, `Sırada: …`. Doğrulamadığın işe bitmiş deme, yeni iş açma."
@@ -114,11 +115,13 @@ def clamp_bytes(line: str, limit: int) -> str:
 
 
 def format_entry(block: dict[str, str], now: datetime, agent: str) -> str:
-    line = (
-        f"- {now:%H:%M} [{agent}] Yaptım: {block['done']} | "
-        f"Kanıt: {block['proof']} | Sırada: {block['next']}"
-    )
-    return clamp_bytes(line, ENTRY_BYTES)
+    """Over budget, Yaptım and Kanıt shrink first: the next session acts on Sırada."""
+    head = f"- {now:%H:%M} [{agent}] Yaptım: "
+    nxt = clamp_bytes(block["next"], NEXT_BYTES)
+    room = ENTRY_BYTES - len(f"{head} | Kanıt:  | Sırada: {nxt}".encode("utf-8"))
+    proof = clamp_bytes(block["proof"], max(room - len(block["done"].encode("utf-8")), room // 2))
+    done = clamp_bytes(block["done"], room - len(proof.encode("utf-8")))
+    return clamp_bytes(f"{head}{done} | Kanıt: {proof} | Sırada: {nxt}", ENTRY_BYTES)
 
 
 def fit(lines: list[str]) -> list[str]:

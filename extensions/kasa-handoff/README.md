@@ -29,6 +29,7 @@ kayıt dosyanın **başına**, frontmatter'dan hemen sonra işaretli bir blok ol
   - Onarım sayacı `agent_start` ile silinmez. Yeni kullanıcı girişi siler.
   - Alt ajanlar dokunulmaz.
 - Kayıt biçimi: `- HH:MM [omp] Yaptım: … | Kanıt: … | Sırada: …`, her alan 240 karakterle sınırlı.
+  Satır en çok 450 bayttır. Satır sığmazsa önce `Yaptım` ve `Kanıt` kısalır. `Sırada` en çok 200 bayt korunur.
 - Blok **birikir**: en yeni satır üstte, toplam 1000 bayta kadar. Sığmayan eski kapanış
   satırları düşer. En yeni satır hiç düşmez.
 - `input` (yalnız ana ajan, oturum başına bir kez): kullanıcının ilk gerçek isteğini
