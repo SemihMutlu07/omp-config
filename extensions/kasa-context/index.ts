@@ -61,7 +61,7 @@ export default function (pi: ExtensionAPI) {
 					: message.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
 			}).join("\n");
 		// The block is ephemeral and rebuilt per call, so the main session gets the approved
-		// decisions and latest handoff on every call; the helper keeps the 8 000 B total.
+		// decisions, latest handoff, and open sessions on every call; the helper keeps the 9 000 B total.
 		const ref = await retrieve(prompt, ctx.cwd, ctx.agent.kind === "main");
 		last = ref;
 		if (ctx.agent.kind === "main" && ctx.ui) {
