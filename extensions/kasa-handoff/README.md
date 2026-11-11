@@ -15,19 +15,18 @@ kayıt dosyanın **başına**, frontmatter'dan hemen sonra işaretli bir blok ol
 
 ## Davranış
 
-- `turn_end`: bir turda araç çalışıp çalışmadığını hatırlar.
+- `turn_end`: araç kullanımını koşu boyunca tutar. Son tur metinse bayrak silinmez.
 - `session_stop`, ana ajan:
   - Kapanış bloğu tamamsa `$KASA_ROOT/handoff/YYYY-MM-DD.md` içindeki
     `<!-- kasa-handoff:auto:begin -->` bloğunun başına son kaydı ekler. Blok yoksa
     frontmatter'dan sonra ekler. Dosya `KASA_ROOT` altında yoksa hiçbir şey yazmaz.
-  - Blok eksikse ve tur araç kullandıysa **tek** gizli devam turu ister; ajan kendi
-    cevabını okuyup üç satırı ekler. `stop_hook_active` ikinci turu engeller.
-  - **Sırada kapısı**: `Sırada` satırı sıradaki işin sahibini söylemek zorundadır.
-    Kabul edilen biçimler: `yok`, `varsayılan: …`, cihaz/kimlik işi (`Sen: …`), veya
-    ajanın kendi adımı (`Sonraki turda …`). Bunların hiçbiri yoksa tur
-    `decision: "block"` ile bir kez geri gönderilir; ajan adımı kendisi koşar, gerçek
-    karar için `ask` formunu varsayılan seçili açar, ya da işin bittiğini yazar.
-    Blok her koşuda (prompt başına) **en fazla bir kez** çalışır.
+  - Blok eksikse ve koşu araç kullandıysa **tek** gizli devam turu ister. Son turun
+    araçsız olması bu isteği düşürmez. `stop_hook_active` ikinci turu engeller.
+  - **Sırada kapısı**: yalnız araç kullanan koşuda çalışır. `Sırada` satırı sahibini
+    söylemek zorundadır. Kabul: `yok`, `varsayılan: …`, cihaz/kimlik işi, veya
+    `Sonraki turda …`. Bunların hiçbiri yoksa tur `decision: "block"` ile bir kez
+    geri gider. Sohbet turu bloklanmaz.
+  - Onarım sayacı `agent_start` ile silinmez. Yeni kullanıcı girişi siler.
   - Alt ajanlar dokunulmaz.
 - Kayıt biçimi: `- HH:MM [omp] Yaptım: … | Kanıt: … | Sırada: …`, her alan 240 karakterle sınırlı.
 - Blok **birikir**: en yeni satır üstte, toplam 1000 bayta kadar. Sığmayan eski kapanış

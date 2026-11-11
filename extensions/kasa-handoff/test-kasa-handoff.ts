@@ -128,6 +128,7 @@ describe("session stop handler", () => {
 	test("a tool turn without the block asks for one repair turn", () => {
 		const { registered, main } = handlers();
 		registered.get("turn_end")?.({ toolResults: [{}] }, main);
+		registered.get("turn_end")?.({ toolResults: [] }, main);
 		const result = registered.get("session_stop")?.(
 			{ last_assistant_message: message("Sadece düz yazı."), stop_hook_active: false },
 			main,
@@ -179,7 +180,7 @@ describe("next-step gate", () => {
 		expect(classifyNext("").owner).toBe("none");
 	});
 
-	test("an open step blocks once, then the repaired run passes", () => {
+	test("an open step blocks once, and agent_start does not arm it again", () => {
 		const { registered, main } = handlers();
 		park(registered, main);
 		try {
@@ -189,12 +190,15 @@ describe("next-step gate", () => {
 			) as { decision?: string; reason?: string } | undefined;
 			expect(blocked?.decision).toBe("block");
 			expect(blocked?.reason).toContain("Sırada");
-			const second = registered.get("session_stop")?.(
-				{ last_assistant_message: withNext("Karar sende: hangi aday skill olsun"), stop_hook_active: false },
-				main,
-			);
-			expect(second).toBeUndefined();
 			registered.get("agent_start")?.({}, main);
+			expect(
+				registered.get("session_stop")?.(
+					{ last_assistant_message: withNext("Karar sende: hangi aday skill olsun"), stop_hook_active: false },
+					main,
+				),
+			).toBeUndefined();
+			registered.get("input")?.({ text: "yeni istek", source: "interactive" }, main);
+			registered.get("turn_end")?.({ toolResults: [{}] }, main);
 			expect(
 				(registered.get("session_stop")?.(
 					{ last_assistant_message: withNext("Karar sende: hangi aday"), stop_hook_active: false },
@@ -224,10 +228,9 @@ describe("next-step gate", () => {
 		}
 	});
 
-	test("a chat turn still blocks an ownerless next step", () => {
+	test("a final text turn still blocks when an earlier turn used a tool", () => {
 		const { registered, main } = handlers();
-		const root = vault();
-		process.env.KASA_ROOT = root;
+		park(registered, main);
 		try {
 			registered.get("turn_end")?.({ toolResults: [] }, main);
 			expect(
@@ -236,10 +239,20 @@ describe("next-step gate", () => {
 					main,
 				) as { decision?: string } | undefined)?.decision,
 			).toBe("block");
-			registered.get("agent_start")?.({}, main);
+		} finally {
+			delete process.env.KASA_ROOT;
+		}
+	});
+
+	test("a chat run does not block an ownerless next step", () => {
+		const { registered, main } = handlers();
+		const root = vault();
+		process.env.KASA_ROOT = root;
+		try {
+			registered.get("turn_end")?.({ toolResults: [] }, main);
 			expect(
 				registered.get("session_stop")?.(
-					{ last_assistant_message: withNext("yok"), stop_hook_active: false },
+					{ last_assistant_message: withNext("Karar sende: hangisi"), stop_hook_active: false },
 					main,
 				),
 			).toBeUndefined();

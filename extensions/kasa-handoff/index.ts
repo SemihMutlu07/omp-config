@@ -13,9 +13,11 @@ import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
  * hidden continuation turn asks the agent to read its own answer and close it.
  *
  * The `Sırada` line decides who acts next. Measured over 60 days, 88% of those lines
- * handed the step back to the user and only 5% needed a human. So a line that names
- * no owner is refused once: the agent must run the step, ask through the `ask` form
- * with a preselected default, or record that the step is finished.
+ * handed the step back to the user and only 5% needed a human. A tool run whose line
+ * names no owner is refused once. The agent must run the step, ask through the `ask`
+ * form with a preselected default, or record that the step is finished. A chat run
+ * is not gated. The one-repair flag clears on the next user prompt, not on `agent_start`,
+ * because a hidden repair turn starts a new agent run.
  */
 const BEGIN = "<!-- kasa-handoff:auto:begin -->";
 const END = "<!-- kasa-handoff:auto:end -->";
@@ -227,27 +229,28 @@ export function writeEntry(root: string, block: ClosingBlock, now: Date, agent: 
 }
 
 export default function (pi: ExtensionAPI) {
-	let lastTurnHadTools = false;
+	let runHadTools = false;
 	let intentSaved = false;
-	// One repair per run, independent of host stop-hook bookkeeping, so a gate can never loop.
+	// One repair per user prompt. A hidden repair emits agent_start, so that event must not clear this.
 	let repaired = false;
 
 	pi.on("session_start", () => {
 		intentSaved = false;
 		repaired = false;
-	});
-
-	pi.on("agent_start", () => {
-		repaired = false;
+		runHadTools = false;
 	});
 
 	// The first typed prompt of a session is the user's intent. It is saved once, so the
 	// next session sees what was asked, not only how the last turn ended.
 	pi.on("input", (event, ctx) => {
-		if (intentSaved || (ctx?.agent?.kind && ctx.agent.kind !== "main")) return;
+		if (ctx?.agent?.kind && ctx.agent.kind !== "main") return;
 		if (event.source !== "interactive" && event.source !== "rpc") return;
 		const text = typeof event.text === "string" ? event.text.trim() : "";
 		if (!text || text.startsWith("/") || text.startsWith("!")) return;
+		// A typed prompt starts a new run. The hidden repair turn is not an input event.
+		repaired = false;
+		runHadTools = false;
+		if (intentSaved) return;
 		intentSaved = true;
 		try {
 			const root = process.env.KASA_ROOT ?? join(homedir(), "Kasa");
@@ -259,15 +262,15 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("turn_end", (event, ctx) => {
 		if (ctx.agent.kind !== "main") return;
-		lastTurnHadTools = event.toolResults.length > 0;
+		if (event.toolResults.length > 0) runHadTools = true;
 	});
 
 	pi.on("session_stop", (event, ctx) => {
 		if (ctx.agent.kind !== "main" || !event.last_assistant_message) return;
 		const block = parseClosingBlock(assistantText(event.last_assistant_message));
 		if (!block) {
-			// A changed turn must close with evidence, even when the gate never ran.
-			if (event.stop_hook_active || repaired || !lastTurnHadTools) return;
+			// The last turn is often text. Keep the tool flag from earlier turns in the run.
+			if (event.stop_hook_active || repaired || !runHadTools) return;
 			repaired = true;
 			return { continue: true, additionalContext: NUDGE };
 		}
@@ -277,8 +280,7 @@ export default function (pi: ExtensionAPI) {
 		} catch (error) {
 			pi.logger?.warn?.(`kasa-handoff: ${String(error)}`);
 		}
-		// A next step must name its owner on every turn, not only tool turns.
-		if (event.stop_hook_active || repaired) return;
+		if (event.stop_hook_active || repaired || !runHadTools) return;
 		if (classifyNext(block.next).ok) return;
 		repaired = true;
 		return { decision: "block" as const, reason: GATE };
