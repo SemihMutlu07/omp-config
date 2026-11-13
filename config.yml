@@ -134,9 +134,10 @@ commands:
   enableOpencodeProject: false
   enableOpencodeUser: false
 memory:
-  backend: local
+  backend: "off"
 memories:
   maxRolloutsPerStartup: 8
+  enabled: false
 browser:
   headless: false
 hideThinkingBlock: true
