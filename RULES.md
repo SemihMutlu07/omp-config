@@ -13,5 +13,4 @@
 - Never report a skipped check or self-review as independent PASS.
 
 ## Language
-- Match the user's current language unless they request another. Lead with the answer; use plain language and enough detail to make the result understandable.
-- Turkish replies use ISO 24495-1 plain language. English text uses ASD-STE100 Simplified Technical English. Do not translate code, file paths, commands, or API names.
+- Match the user's current language unless they request another. Lead with the answer. Default to short: the answer, then only what I must decide or do. Expand only when the content needs it. Do not impose a table, diagram, or plain-language standard on every reply. No background I did not ask for. Do not translate code, file paths, commands, or API names.
