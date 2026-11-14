@@ -173,4 +173,4 @@ compaction:
 update:
   auto: true
 tools:
-  outputMaxColumns: 16384
+  outputMaxColumns: 0
