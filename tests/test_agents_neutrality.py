@@ -17,6 +17,8 @@ OMP_AGENTS_LINK = HOME / ".omp/agent/AGENTS.md"
 OMP_APPENDIX_LINK = HOME / ".omp/agent/APPEND_SYSTEM.md"
 OMP_RULES_LINK = HOME / ".omp/agent/RULES.md"
 RULES = ROOT / "RULES.md"
+OMP_PERSONALITY_LINK = HOME / ".omp/agent/PERSONALITY.md"
+PERSONALITY = ROOT / "PERSONALITY.md"
 KASA_CONTRACT = HOME / "Kasa/AGENTS.md"
 
 # Harness- or vendor-specific tokens that must not appear in the shared contract.
@@ -119,10 +121,23 @@ class SharedAgentsNeutralityTests(unittest.TestCase):
         appendix = OMP_ONLY.read_text(encoding="utf-8")
         for token in ("## Skills and workflows", "`ask-pocock`", "`ask-matt`"):
             self.assertNotIn(token, appendix)
+
     def test_omp_symlinks_resolve_to_repo(self):
         self.assertEqual(OMP_AGENTS_LINK.resolve(), SHARED.resolve())
         self.assertEqual(OMP_APPENDIX_LINK.resolve(), OMP_ONLY.resolve())
         self.assertEqual(OMP_RULES_LINK.resolve(), RULES.resolve())
+        self.assertEqual(OMP_PERSONALITY_LINK.resolve(), PERSONALITY.resolve())
+
+    def test_sticky_rules_copy_the_shared_contract(self):
+        # Subagents load RULES.md but not AGENTS.md. A reworded copy is a second rule.
+        bullets = [line[2:] for line in RULES.read_text(encoding="utf-8").splitlines() if line.startswith("- ")]
+        self.assertTrue(bullets)
+        drifted = [bullet for bullet in bullets if bullet not in self.text]
+        self.assertEqual(drifted, [], f"{RULES.name} bullets missing from {SHARED.name}")
+
+    def test_personality_override_is_not_empty(self):
+        # OMP falls back to its built-in preset when this file is empty.
+        self.assertTrue(PERSONALITY.read_text(encoding="utf-8").strip())
 
     def test_harness_skill_roots_share_one_store(self):
         """A harness root is a link to the store, never a second hand-made copy."""

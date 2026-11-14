@@ -74,7 +74,7 @@ bağlam reddi bulunmadığından bu hedef **BLOCKED** kalır.
 | Kategori | Yönetim Yolu | Git Takibi |
 |---|---|---|
 | **Konfigürasyon (`config.yml`, `settings.json`)** | Bu Git reposu + Sembolik Link | **Evet** |
-| **Kurallar (`AGENTS.md`)** | Bu Git reposu + Sembolik Link | **Evet** |
+| **Kurallar (`AGENTS.md`, `RULES.md`, `PERSONALITY.md`, `APPEND_SYSTEM.md`)** | Bu Git reposu + Sembolik Link | **Evet** |
 | **Yetenekler (`skills/*`)** | Paylaşılan depo `~/.agents/skills/`; bu repo yalnız OMP'ye özel skill'lerin kaynağı | **Evet** |
 | **Eklentiler (`extensions/*`)** | `~/.omp/agent/extensions/` | **Evet** |
 | **Model Kimlik Bilgileri (`auth.json`, Token'lar)** | Host-yerel (`omp login` / env) | ❌ **ASLA (Gitignore)** |
@@ -273,8 +273,10 @@ omp-config/
 ├── README.md               # Bu dokümantasyon
 ├── config.yml              # Ana OMP konfigürasyonu (model rolleri, retry zincirleri, tui vb.)
 ├── settings.json           # Ek eklenti ve alt sistem ayarları
-├── AGENTS.md               # OMP global sözleşmesi ve kullanıcı kuralları
-├── APPEND_SYSTEM.md        # Aynı cevap sözleşmesi; OMP bunu sistem promptunun sonuna ekler
+├── AGENTS.md               # Ortak sözleşme: her harness yükler, harness'e özel ad içermez
+├── RULES.md                # Alt ajanlara da giden kurallar; her madde AGENTS.md'den kelimesi kelimesine kopyadır
+├── PERSONALITY.md          # OMP'nin varsayılan "terse engineer" kişilik bloğunun yerine geçer (yalnız ana oturum)
+├── APPEND_SYSTEM.md        # Yalnız OMP yönlendirmesi; OMP bunu sistem promptunun sonuna ekler
 ├── extensions/             # OMP eklentileri
 │   ├── herdr-omp-agent-state.ts # Herdr orkestrasyon entegrasyonu
 │   ├── bash-guard/         # Bash komut güvenlik filtresi
@@ -323,7 +325,9 @@ Each machine keeps a separate checkout.
 Each machine keeps its own model settings and OMP version.
 Session histories, databases, and credentials remain machine-local.
 
-OMP loads `~/.omp/agent/AGENTS.md` and `~/.omp/agent/APPEND_SYSTEM.md`.
+OMP loads `AGENTS.md`, `RULES.md`, `PERSONALITY.md`, and `APPEND_SYSTEM.md` from `~/.omp/agent/`.
+Subagents do not load `AGENTS.md`; they receive `RULES.md` only.
+An empty `PERSONALITY.md` makes OMP fall back to its built-in preset.
 Do not create `~/AGENTS.md`.
 The setup script removes that path only when it links to this checkout's rule file.
 The setup script preserves unrelated files and links at that path.

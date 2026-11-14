@@ -145,6 +145,8 @@ if [ -L "$HOME_DIR/AGENTS.md" ] && [ "$(readlink -f "$HOME_DIR/AGENTS.md")" = "$
 fi
 install_file "$SCRIPT_DIR/AGENTS.md" "$OMP_DIR/AGENTS.md"
 install_file "$SCRIPT_DIR/APPEND_SYSTEM.md" "$OMP_DIR/APPEND_SYSTEM.md"
+install_file "$SCRIPT_DIR/RULES.md" "$OMP_DIR/RULES.md"
+install_file "$SCRIPT_DIR/PERSONALITY.md" "$OMP_DIR/PERSONALITY.md"
 
 # 4. Skills ve Extensions bağla
 print_step "Skills yerleştiriliyor (~/.agents/skills)..."
