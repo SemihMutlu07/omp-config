@@ -172,3 +172,5 @@ compaction:
     openai-codex/*: f150000
 update:
   auto: true
+tools:
+  outputMaxColumns: 16384
